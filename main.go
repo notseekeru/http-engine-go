@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 )
 
@@ -14,24 +13,24 @@ func main() {
 
 	defer mylisterer.Close()
 
-	fmt.Println("Listening to 8080")
+	println("Listening to 8080")
 
 	for {
 		conn, err := mylisterer.Accept()
 		if err != nil {
-			fmt.Println(err)
+			println(err)
 			continue
 		}
 
 		go func(myconnection net.Conn) {
 			defer myconnection.Close()
 
-			response := "HTTP/1.1 200 OK\r\n" +
+			myresponse := "HTTP/1.1 200 OK\r\n" +
 				"Content-Length: 22\r\n" +
 				"\r\n" +
 				"Hello from Go server!\n"
 
-			myconnection.Write([]byte(response))
+			myconnection.Write([]byte(myresponse))
 		}(conn)
 	}
 }
