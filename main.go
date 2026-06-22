@@ -20,7 +20,7 @@ func main() {
 		conn, err := mylisterer.Accept()
 		if err != nil {
 			println(err)
-			continue
+			break
 		}
 
 		go func(myconnection net.Conn) {
