@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"time"
 )
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 
 		go func(myconnection net.Conn) {
 			defer myconnection.Close()
+			myconnection.SetDeadline(time.Now().Add(5 * time.Second)) // Sets deadline
 
 			myresponse := "HTTP/1.1 200 OK\r\n" +
 				"Content-Length: 22\r\n" +
