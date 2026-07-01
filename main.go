@@ -29,7 +29,7 @@ func main() {
 			myconnection.SetDeadline(time.Now().Add(5 * time.Second)) // Sets deadline
 
 			mybody := "Hello from go Server!\n"
-			mybodylength := strconv.Itoa(len(body))
+			mybodylength := strconv.Itoa(len(mybody))
 
 			myresponse := "HTTP/1.1 200 OK\r\n" +
 				"Content-Length: " + mybodylength + "\r\n" +
