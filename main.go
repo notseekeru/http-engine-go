@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strconv"
 	"time"
 )
 
@@ -27,10 +28,13 @@ func main() {
 			defer myconnection.Close()
 			myconnection.SetDeadline(time.Now().Add(5 * time.Second)) // Sets deadline
 
+			mybody := "Hello from go Server!\n"
+			mybodylength := strconv.Itoa(len(body))
+
 			myresponse := "HTTP/1.1 200 OK\r\n" +
-				"Content-Length: 22\r\n" +
+				"Content-Length: " + mybodylength + "\r\n" +
 				"\r\n" +
-				"Hello from Go server!\n"
+				mybody
 
 			myconnection.Write([]byte(myresponse))
 		}(conn)
