@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -34,14 +33,15 @@ func main() {
 			reader := bufio.NewReader(myconnection)
 
 			line, err := reader.ReadString('\n')
-			if err != nil && err != io.EOF {
+			if err != nil {
 				return
 			}
 
-			println(line)
-
-			line = strings.TrimRight(line, "\r\n")
-			println("Client Request Line:", line)
+			parts := strings.Split(line, " ")
+			for index, value := range parts {
+				println(index, value)
+			}
+			println("Client Request Line:", parts)
 
 			mybody := "Hello from go Server!\n"
 			mybodylength := strconv.Itoa(len(mybody))
