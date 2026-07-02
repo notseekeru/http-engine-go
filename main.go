@@ -38,7 +38,7 @@ func main() {
 				return
 			}
 
-			println()
+			println(line)
 
 			line = strings.TrimRight(line, "\r\n")
 			println("Client Request Line:", line)
