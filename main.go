@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,7 +29,19 @@ func main() {
 
 		go func(myconnection net.Conn) {
 			defer myconnection.Close()
-			myconnection.SetDeadline(time.Now().Add(5 * time.Second)) // Sets deadline
+			myconnection.SetDeadline(time.Now().Add(5 * time.Second))
+
+			reader := bufio.NewReader(myconnection)
+
+			line, err := reader.ReadString('\n')
+			if err != nil && err != io.EOF {
+				return
+			}
+
+			println()
+
+			line = strings.TrimRight(line, "\r\n")
+			println("Client Request Line:", line)
 
 			mybody := "Hello from go Server!\n"
 			mybodylength := strconv.Itoa(len(mybody))
@@ -39,6 +52,9 @@ func main() {
 				mybody
 
 			myconnection.Write([]byte(myresponse))
+
 		}(conn)
+
 	}
+
 }
