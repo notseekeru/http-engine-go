@@ -1,6 +1,8 @@
-# HTTP Engine
+# TCP/HTTP Engine
 
 A minimal HTTP/1.1 server built from scratch using only the Go standard library. This project touches the raw TCP wire to understand how HTTP works under the hood.
+
+This project doesn't include `net/http` as it abstracts away many networking logics needed to bridge networking fundamentals.
 
 ## Imports
 
