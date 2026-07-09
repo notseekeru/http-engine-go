@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -42,21 +43,29 @@ func main() {
 
 			headerHashmap := make(map[string]string)
 
-			for {
-				headerLine, err := reader.ReadString('\n')
-				if err != nil {
-					return
-				}
-				if headerLine == "\r\n" {
-					println("End")
-					break
-				}
-				headerLine = strings.TrimRight(headerLine, "\r\n")
-				result := strings.Split(headerLine, ": ")
-				headerHashmap[result[0]] = result[1]
-				fmt.Printf("Header %q\n", headerHashmap)
+			if value, ok := headerHashmap["Content-Length"]; ok {
+				fmt.Println("Found value:", value)
+			} else {
+				fmt.Println("Key not found")
+				return
 			}
 
+			// CONVERT HASHMAP CONTENTLENGTH TO AN INTEGER64
+			strValue := headerHashmap["Content-Length"]
+			intValue64, err := strconv.ParseInt(strValue, 10, 64)
+			if err != nil {
+				fmt.Printf("PARSING ERROR: Could not convert string %q to int: %v\n", strValue, err)
+			}
+			bodyReader := io.LimitReader(reader, intValue64)
+
+			// READING THE BODY
+			bodyBytes, err := io.ReadAll(bodyReader)
+			if err != nil {
+				fmt.Printf("CRITICAL ERROR DURING READ: %v\n", err)
+			}
+			fmt.Printf("Body payload read via io: %s\n", string(bodyBytes))
+
+			// ROUTING LOGIC
 			if len(requestParts) != 3 {
 				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
 				return
