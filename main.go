@@ -49,7 +49,7 @@ func main() {
 			for {
 				headerLine, err := reader.ReadString('\n')
 				if err != nil {
-					return
+					panic(err)
 				}
 				headerLine = strings.TrimRight(headerLine, "\r\n")
 				if headerLine == "" {
@@ -79,7 +79,7 @@ func main() {
 			bodyReader := io.LimitReader(reader, intValue64)
 			bodyBytes, err := io.ReadAll(bodyReader)
 			if err != nil {
-				fmt.Printf("CRITICAL ERROR DURING READ: %v\n", err)
+				panic(err)
 			}
 			fmt.Printf("HTTP Body payload: %s\n", string(bodyBytes))
 
@@ -93,7 +93,7 @@ func main() {
 				return
 			}
 			if requestParts[0] != "GET" && requestParts[0] != "POST" && requestParts[0] != "DELETE" && requestParts[0] != "PUT" {
-				MyHTTPMessage(conn, "400", "Bad Request", "Not valid HTTP Method")
+				MyHTTPMessage(conn, "500", "Not Supported", "Unsupported HTTP Method")
 				return
 			}
 
