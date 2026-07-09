@@ -43,6 +43,20 @@ func main() {
 
 			headerHashmap := make(map[string]string)
 
+			for {
+				headerLine, err := reader.ReadString('\n')
+				if err != nil {
+					return
+				}
+				headerLine = strings.TrimRight(headerLine, "\r\n")
+				if headerLine == "" {
+					println("End")
+					break
+				}
+				result := strings.Split(headerLine, ": ")
+				headerHashmap[result[0]] = result[1]
+				fmt.Printf("Read line: %q\n", headerLine)
+			}
 			if value, ok := headerHashmap["Content-Length"]; ok {
 				fmt.Println("Found value:", value)
 			} else {
