@@ -63,25 +63,24 @@ func main() {
 
 			if value, ok := headerHashmap["Content-Length"]; ok {
 				fmt.Println("Content-Length Value:", value)
+				// CONVERT HASHMAP CONTENTLENGTH TO AN INTEGER64
+				strValue := headerHashmap["Content-Length"]
+				intValue64, err := strconv.ParseInt(strValue, 10, 64)
+				if err != nil {
+					fmt.Printf("PARSING ERROR: Could not convert string %q to int: %v\n", strValue, err)
+				}
+
+				// READING THE BODY
+				bodyReader := io.LimitReader(reader, intValue64)
+				bodyBytes, err := io.ReadAll(bodyReader)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Printf("HTTP Body payload: %s\n", string(bodyBytes))
+
 			} else {
 				fmt.Println("Key not found")
-				return
 			}
-
-			// CONVERT HASHMAP CONTENTLENGTH TO AN INTEGER64
-			strValue := headerHashmap["Content-Length"]
-			intValue64, err := strconv.ParseInt(strValue, 10, 64)
-			if err != nil {
-				fmt.Printf("PARSING ERROR: Could not convert string %q to int: %v\n", strValue, err)
-			}
-
-			// READING THE BODY
-			bodyReader := io.LimitReader(reader, intValue64)
-			bodyBytes, err := io.ReadAll(bodyReader)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("HTTP Body payload: %s\n", string(bodyBytes))
 
 			// ROUTING LOGIC
 			if len(requestParts) != 3 {
@@ -118,7 +117,7 @@ func MyHTTPMessage(myConnection net.Conn, code string, res string, why string) {
 	datenow := time.Now()
 	server := "GoLang NixOS"
 	content := "text/plain"
-	body := why
+	body := why + "\n"
 	bodyLength := strconv.Itoa(len(body))
 	connection := "close"
 
