@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	_ "io"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -47,13 +47,13 @@ func main() {
 				if err != nil {
 					return
 				}
-				if headerLine == "\r\n" {
+				headerLine = strings.TrimRight(headerLine, "\r\n")
+				if headerLine == "" {
 					println("End")
 					break
 				}
 				result := strings.Split(headerLine, ": ")
 				headers[result[0]] = result[1]
-				headerLine = strings.TrimRight(headerLine, "\r\n")
 				fmt.Printf("Read line: %q\n", headerLine)
 			}
 
@@ -65,10 +65,19 @@ func main() {
 			}
 
 			strValue := headers["Content-Length"]
-			intValueContentLength, _ := strconv.Atoi(strValue)
+			intValue64, err := strconv.ParseInt(strValue, 10, 64)
+			if err != nil {
+				fmt.Printf("PARSING ERROR: Could not convert string %q to int: %v\n", strValue, err)
+			}
+			nextByte, _ := reader.Peek(1)
+			fmt.Printf("Cursor is currently resting on character: %q\n", string(nextByte))
+			bodyReader := io.LimitReader(reader, intValue64)
 
-			bufferHTTPBody := make([]byte, intValueContentLength)
-			fmt.Printf("%q", bufferHTTPBody)
+			bodyBytes, err := io.ReadAll(bodyReader)
+			if err != nil {
+				fmt.Printf("CRITICAL ERROR DURING READ: %v\n", err)
+			}
+			fmt.Printf("Body payload read via io: %s\n", string(bodyBytes))
 
 		}(conn)
 
