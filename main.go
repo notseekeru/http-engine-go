@@ -39,6 +39,23 @@ func main() {
 			requestLine = strings.TrimRight(requestLine, "\r\n")
 			requestParts := strings.Split(requestLine, " ")
 
+			headerHashmap := make(map[string]string)
+
+			for {
+				headerLine, err := reader.ReadString('\n')
+				if err != nil {
+					return
+				}
+				if headerLine == "\r\n" {
+					println("End")
+					break
+				}
+				headerLine = strings.TrimRight(headerLine, "\r\n")
+				result := strings.Split(headerLine, " ")
+				headerHashmap[result[0]] = result[1]
+				println(string(headerHashmap))
+			}
+
 			if len(requestParts) != 3 {
 				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
 				return
@@ -63,7 +80,6 @@ func main() {
 				MyHTTPMessage(conn, "404", "Not Found", "Not found")
 				return
 			}
-
 		}(conn)
 
 	}
