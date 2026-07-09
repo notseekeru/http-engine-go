@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// Testing grounds for my implementation of solutions
+
 func main() {
 	myListener, err := net.Listen("tcp", ":8080")
 
@@ -47,25 +49,4 @@ func main() {
 		}(conn)
 
 	}
-
-}
-func MyHTTPMessage(myConnection net.Conn, code string, res string, why string) {
-	// Server -> Client. So we use server.
-	datenow := time.Now()
-	server := "GoLang NixOS"
-	content := "text/plain"
-	body := "Hello! " + why
-	bodyLength := strconv.Itoa(len(body))
-	connection := "close"
-
-	serverResponse := "HTTP/1.1 " + code + " " + res + "\r\n" +
-		"Date: " + datenow.Format(time.RFC1123) + "\r\n" +
-		"Server: " + server + "\r\n" +
-		"Content-Length: " + bodyLength + "\r\n" +
-		"Content-Type: " + content + "\r\n" +
-		"Connection: " + connection + "\r\n" +
-		"\r\n" +
-		body
-
-	myConnection.Write([]byte(serverResponse))
 }
