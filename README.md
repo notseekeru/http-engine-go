@@ -30,7 +30,7 @@ Reading raw TCP streams byte-by-byte is slow and resource-heavy. `bufio` reduces
 
 ### `io`
 
-Operating systems report disconnections differently (Linux vs Windows vs macOS). `io` provides a universal standard (`io.EOF`) to detect when a client has closed the connection. It also defines the `Reader` and `Writer` interfaces used by almost every other I/O package, allowing you to stream large HTTP bodies without loading them entirely into memory.
+HTTP bodies can be arbitrarily large. Reading them in one shot (`io.ReadAll`) works for small payloads but blows memory for large ones. `io.LimitReader` wraps the buffered reader and stops after `Content-Length` bytes, preventing over-read. `io.ReadAll` then drains that bounded stream into a byte slice — safe because the limit is already enforced.
 
 ### `net`
 
