@@ -32,6 +32,7 @@ func main() {
 
 			reader := bufio.NewReader(myConnection)
 
+			// FIRST REQUEST LINE PARSING OF HTTP MESSAGE
 			requestLine, err := reader.ReadString('\n')
 			if err != nil {
 				return
@@ -44,6 +45,7 @@ func main() {
 
 			headerHashmap := make(map[string]string)
 
+			// LOOP THROUGH UNPREDICATABLE HEADER LINE MAP IT USING A HASHMAP
 			for {
 				headerLine, err := reader.ReadString('\n')
 				if err != nil {
@@ -58,6 +60,7 @@ func main() {
 				headerHashmap[result[0]] = result[1]
 				fmt.Printf("Header line: %q\n", headerLine)
 			}
+
 			if value, ok := headerHashmap["Content-Length"]; ok {
 				fmt.Println("Content-Length Value:", value)
 			} else {
@@ -71,9 +74,9 @@ func main() {
 			if err != nil {
 				fmt.Printf("PARSING ERROR: Could not convert string %q to int: %v\n", strValue, err)
 			}
-			bodyReader := io.LimitReader(reader, intValue64)
 
 			// READING THE BODY
+			bodyReader := io.LimitReader(reader, intValue64)
 			bodyBytes, err := io.ReadAll(bodyReader)
 			if err != nil {
 				fmt.Printf("CRITICAL ERROR DURING READ: %v\n", err)
