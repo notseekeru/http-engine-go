@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"net"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -38,12 +38,21 @@ func main() {
 			}
 			print("first line: ", requestLine)
 
+			headers := make(map[string]string)
+
 			for {
 				headerLine, err := reader.ReadString('\n')
 				if err != nil {
 					return
 				}
-				println(headerLine)
+				if headerLine == "\r\n" {
+					println("End")
+					return
+				}
+				headerLine = strings.TrimRight(headerLine, "\r\n")
+				result := strings.Split(headerLine, " ")
+				headers[result[0]] = result[1]
+				fmt.Printf("Read line: %q\n", headers)
 			}
 
 		}(conn)
