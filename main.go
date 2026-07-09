@@ -96,7 +96,7 @@ func MyHTTPMessage(myConnection net.Conn, code string, res string, why string) {
 	connection := "close"
 
 	serverResponse := "HTTP/1.1 " + code + " " + res + "\r\n" +
-		"Date: " + datenow.Format(time.RFC1123) + "\r\n" +
+		"Date: " + datenow.UTC().Format(time.RFC1123) + "\r\n" +
 		"Server: " + server + "\r\n" +
 		"Content-Length: " + bodyLength + "\r\n" +
 		"Content-Type: " + content + "\r\n" +
