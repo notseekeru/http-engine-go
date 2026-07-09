@@ -36,32 +36,12 @@ func main() {
 			}
 			print("first line: ", requestLine)
 
-			requestLine = strings.TrimRight(requestLine, "\r\n")
-			requestParts := strings.Split(requestLine, " ")
-
-			if len(requestParts) != 3 {
-				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
-				return
-			}
-			if requestParts[2] != "HTTP/1.1" {
-				MyHTTPMessage(conn, "501", "Bad Request", "Not HTTP/1.1")
-				return
-			}
-			if requestParts[0] != "GET" && requestParts[0] != "POST" && requestParts[0] != "DELETE" && requestParts[0] != "PUT" {
-				MyHTTPMessage(conn, "400", "Bad Request", "Not valid HTTP Method")
-				return
-			}
-
-			switch requestParts[1] {
-			case "/":
-				MyHTTPMessage(conn, "200", "OK", "You re good!")
-				return
-			case "/ping":
-				MyHTTPMessage(conn, "200", "OK", "pong")
-				return
-			default:
-				MyHTTPMessage(conn, "404", "Not Found", "Not found")
-				return
+			for {
+				headerLine, err := reader.ReadString('\n')
+				if err != nil {
+					return
+				}
+				println(headerLine)
 			}
 
 		}(conn)
