@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "io"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -60,7 +61,14 @@ func main() {
 				fmt.Println("Found value:", value)
 			} else {
 				fmt.Println("Key not found")
+				return
 			}
+
+			strValue := headers["Content-Length"]
+			intValueContentLength, _ := strconv.Atoi(strValue)
+
+			bufferHTTPBody := make([]byte, intValueContentLength)
+			fmt.Printf("%q", bufferHTTPBody)
 
 		}(conn)
 
