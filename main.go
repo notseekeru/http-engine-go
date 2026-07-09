@@ -2,43 +2,93 @@ package main
 
 import (
 	"bufio"
-	"io"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 )
 
 func main() {
-	mylisterer, err := net.Listen("tcp", ":8080")
+	myListener, err := net.Listen("tcp", ":8080")
 
 	if err != nil {
 		panic(err)
 	}
 
-	defer mylisterer.Close()
+	defer myListener.Close()
 
 	println("Listening to 8080")
 
 	for {
-		conn, err := mylisterer.Accept()
+		conn, err := myListener.Accept()
 		if err != nil {
 			println(err)
 			break
 		}
 
-		go func(myconnection net.Conn) {
-			defer myconnection.Close()
-			myconnection.SetDeadline(time.Now().Add(5 * time.Second)) // Sets deadline
+		go func(myConnection net.Conn) {
+			defer myConnection.Close()
+			myConnection.SetDeadline(time.Now().Add(5 * time.Second))
 
-			mybody := "Hello from go Server!\n"
-			mybodylength := strconv.Itoa(len(mybody))
+			reader := bufio.NewReader(myConnection)
 
-			myresponse := "HTTP/1.1 200 OK\r\n" +
-				"Content-Length: " + mybodylength + "\r\n" +
-				"\r\n" +
-				mybody
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				return
+			}
 
-			myconnection.Write([]byte(myresponse))
+			line = strings.TrimRight(line, "\r\n")
+			parts := strings.Split(line, " ")
+
+			for index, value := range parts {
+				println(index, value)
+			}
+
+			if len(parts) != 3 {
+				MyHttpMessage(conn, "400", "Bad Request", "Too many")
+				return
+			}
+			if parts[2] != "HTTP/1.1" {
+				MyHttpMessage(conn, "400", "Bad Request", "Not HTTP/1.1")
+				return
+			}
+			if parts[0] != "GET" && parts[0] != "POST" {
+				MyHttpMessage(conn, "400", "Bad Request", "Not GET or POST")
+				return
+			}
+			if parts[1] == "/ping" {
+				MyHttpMessage(conn, "200", "OK", "pong")
+				return
+			} else if parts[1] != "/" {
+				MyHttpMessage(conn, "404", "Not Found", "Not /")
+				return
+			} else {
+				MyHttpMessage(conn, "200", "OK", "You're good!")
+				return
+			}
+
 		}(conn)
+
 	}
+
+}
+func MyHttpMessage(myConnection net.Conn, code string, res string, why string) {
+	// Server -> Client. So we use server.
+	datenow := time.Now()
+	server := "GoLang NixOS"
+	content := "text/plain"
+	body := "Hello! " + why
+	bodyLength := strconv.Itoa(len(body))
+	connection := "close"
+
+	serverResponse := "HTTP/1.1 " + code + " " + res + "\r\n" +
+		"Date: " + datenow.Format(time.RFC1123) + "\r\n" +
+		"Server: " + server + "\r\n" +
+		"Content-Length: " + bodyLength + "\r\n" +
+		"Content-Type: " + content + "\r\n" +
+		"Connection: " + connection + "\r\n" +
+		"\r\n" +
+		body
+
+	myConnection.Write([]byte(serverResponse))
 }
