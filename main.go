@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -53,7 +54,7 @@ func main() {
 				headerLine = strings.TrimRight(headerLine, "\r\n")
 				result := strings.Split(headerLine, " ")
 				headerHashmap[result[0]] = result[1]
-				println(string(headerHashmap))
+				fmt.Printf("Header %q\n", headerHashmap)
 			}
 
 			if len(requestParts) != 3 {
@@ -71,13 +72,13 @@ func main() {
 
 			switch requestParts[1] {
 			case "/":
-				MyHTTPMessage(conn, "200", "OK", "You re good!")
+				MyHTTPMessage(conn, "200", "OK", "You've arrived at: /")
 				return
 			case "/ping":
 				MyHTTPMessage(conn, "200", "OK", "pong")
 				return
 			default:
-				MyHTTPMessage(conn, "404", "Not Found", "Not found")
+				MyHTTPMessage(conn, "404", "Not Found", "You've have not arrived due to: Not Found")
 				return
 			}
 		}(conn)
@@ -90,7 +91,7 @@ func MyHTTPMessage(myConnection net.Conn, code string, res string, why string) {
 	datenow := time.Now()
 	server := "GoLang NixOS"
 	content := "text/plain"
-	body := "Hello! " + why
+	body := why
 	bodyLength := strconv.Itoa(len(body))
 	connection := "close"
 
