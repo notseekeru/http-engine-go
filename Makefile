@@ -1,11 +1,6 @@
 BINARY_NAME=http-go-engine
 MAIN_PACKAGE_PATH=./main.go
 
-.PHONY: help
-help:
-	@echo 'Usage:'
-	@sed -n 's/^##//p' $(MAKEFILE_LIST) | column -t -s ':' |  sed -e 's/^/ /'
-
 .PHONY: tidy
 tidy:
 	go fmt ./...
@@ -30,11 +25,6 @@ run:
 test:
 	go test -v -race -buildvcs ./...
 
-.PHONY: test/cover
-test/cover:
-	go test -v -race -buildvcs -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out
-
 .PHONY: build
 build:
 	go build -ldflags="-s -w" -o bin/$(BINARY_NAME) $(MAIN_PACKAGE_PATH)
@@ -44,3 +34,10 @@ clean:
 	go clean
 	rm -rf bin/ coverage.out
 
+.PHONY: get
+get:
+	curl -v http://localhost:8080/
+
+.PHONY: post
+post:
+	curl -v -X POST -d "hello world" http://localhost:8080/
