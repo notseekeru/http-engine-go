@@ -36,6 +36,7 @@ func main() {
 			if err != nil {
 				return
 			}
+			println(line)
 
 			line = strings.TrimRight(line, "\r\n")
 			parts := strings.Split(line, " ")
@@ -49,22 +50,39 @@ func main() {
 				return
 			}
 			if parts[2] != "HTTP/1.1" {
-				MyHttpMessage(conn, "400", "Bad Request", "Not HTTP/1.1")
+				MyHttpMessage(conn, "501", "Bad Request", "Not HTTP/1.1")
 				return
 			}
-			if parts[0] != "GET" && parts[0] != "POST" {
-				MyHttpMessage(conn, "400", "Bad Request", "Not GET or POST")
+			if parts[0] != "GET" && parts[0] != "POST" && parts[0] != "DELETE" && parts[0] != "PUT" {
+				MyHttpMessage(conn, "400", "Bad Request", "Not valid HTTP Method")
 				return
 			}
 			if parts[1] == "/ping" {
 				MyHttpMessage(conn, "200", "OK", "pong")
 				return
 			} else if parts[1] != "/" {
-				MyHttpMessage(conn, "404", "Not Found", "Not /")
+				MyHttpMessage(conn, "404", "Not Found", "Not found")
 				return
 			} else {
 				MyHttpMessage(conn, "200", "OK", "You're good!")
 				return
+			}
+
+			newreader := bufio.NewReader(myConnection)
+			var fullHeader string
+
+			for {
+				line, err := newreader.ReadString('\n')
+				if err != nil {
+					break
+				}
+
+				fullHeader += line
+
+				// If a line is just "\r\n" or "\n", we have reached the end of the headers
+				if line == "\r\n" || line == "\n" {
+					break
+				}
 			}
 
 		}(conn)
