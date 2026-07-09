@@ -36,14 +36,8 @@ func main() {
 			}
 			print("first line: ", firstLine)
 
-			secondLine, err := reader.ReadString('\n')
-			if err != nil {
-				return
-			}
-			println("second line: ", secondLine)
-
-			secondLine = strings.TrimRight(secondLine, "\r\n")
-			parts := strings.Split(secondLine, " ")
+			firstLine = strings.TrimRight(firstLine, "\r\n")
+			parts := strings.Split(firstLine, " ")
 
 			if len(parts) != 3 {
 				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
@@ -58,14 +52,15 @@ func main() {
 				return
 			}
 
-			if parts[1] == "/ping" {
+			switch parts[1] {
+			case "/":
+				MyHTTPMessage(conn, "200", "OK", "You re good!")
+				return
+			case "/ping":
 				MyHTTPMessage(conn, "200", "OK", "pong")
 				return
-			} else if parts[1] != "/" {
+			default:
 				MyHTTPMessage(conn, "404", "Not Found", "Not found")
-				return
-			} else {
-				MyHTTPMessage(conn, "200", "OK", "You're good!")
 				return
 			}
 
