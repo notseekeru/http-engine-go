@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	_ "io"
 	"net"
 	"strings"
 	"time"
@@ -47,12 +48,18 @@ func main() {
 				}
 				if headerLine == "\r\n" {
 					println("End")
-					return
+					break
 				}
-				headerLine = strings.TrimRight(headerLine, "\r\n")
-				result := strings.Split(headerLine, " ")
+				result := strings.Split(headerLine, ": ")
 				headers[result[0]] = result[1]
-				fmt.Printf("Read line: %q\n", headers)
+				headerLine = strings.TrimRight(headerLine, "\r\n")
+				fmt.Printf("Read line: %q\n", headerLine)
+			}
+
+			if value, ok := headers["Content-Length"]; ok {
+				fmt.Println("Found value:", value)
+			} else {
+				fmt.Println("Key not found")
 			}
 
 		}(conn)
