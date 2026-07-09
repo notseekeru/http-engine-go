@@ -32,24 +32,18 @@ func main() {
 
 			firstLine, err := reader.ReadString('\n')
 			if err != nil {
-				println("Error reading first line:", err.Error())
 				return
 			}
-			print(firstLine)
+			print("first line: ", firstLine)
 
 			secondLine, err := reader.ReadString('\n')
 			if err != nil {
-				println("Error reading second line:", err.Error())
 				return
 			}
-			println(secondLine)
+			println("second line: ", secondLine)
 
 			secondLine = strings.TrimRight(secondLine, "\r\n")
 			parts := strings.Split(secondLine, " ")
-
-			for index, value := range parts {
-				println(index, value)
-			}
 
 			if len(parts) != 3 {
 				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
