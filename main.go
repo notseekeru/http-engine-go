@@ -52,7 +52,7 @@ func main() {
 					break
 				}
 				headerLine = strings.TrimRight(headerLine, "\r\n")
-				result := strings.Split(headerLine, " ")
+				result := strings.Split(headerLine, ": ")
 				headerHashmap[result[0]] = result[1]
 				fmt.Printf("Header %q\n", headerHashmap)
 			}
