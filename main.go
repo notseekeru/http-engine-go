@@ -30,29 +30,29 @@ func main() {
 
 			reader := bufio.NewReader(myConnection)
 
-			firstLine, err := reader.ReadString('\n')
+			requestLine, err := reader.ReadString('\n')
 			if err != nil {
 				return
 			}
-			print("first line: ", firstLine)
+			print("first line: ", requestLine)
 
-			firstLine = strings.TrimRight(firstLine, "\r\n")
-			parts := strings.Split(firstLine, " ")
+			requestLine = strings.TrimRight(requestLine, "\r\n")
+			requestParts := strings.Split(requestLine, " ")
 
-			if len(parts) != 3 {
+			if len(requestParts) != 3 {
 				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
 				return
 			}
-			if parts[2] != "HTTP/1.1" {
+			if requestParts[2] != "HTTP/1.1" {
 				MyHTTPMessage(conn, "501", "Bad Request", "Not HTTP/1.1")
 				return
 			}
-			if parts[0] != "GET" && parts[0] != "POST" && parts[0] != "DELETE" && parts[0] != "PUT" {
+			if requestParts[0] != "GET" && requestParts[0] != "POST" && requestParts[0] != "DELETE" && requestParts[0] != "PUT" {
 				MyHTTPMessage(conn, "400", "Bad Request", "Not valid HTTP Method")
 				return
 			}
 
-			switch parts[1] {
+			switch requestParts[1] {
 			case "/":
 				MyHTTPMessage(conn, "200", "OK", "You re good!")
 				return
