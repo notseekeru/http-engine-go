@@ -36,7 +36,7 @@ func main() {
 			if err != nil {
 				return
 			}
-			print("first line: ", requestLine)
+			print("Request Line: ", requestLine)
 
 			requestLine = strings.TrimRight(requestLine, "\r\n")
 			requestParts := strings.Split(requestLine, " ")
@@ -55,7 +55,7 @@ func main() {
 				}
 				result := strings.Split(headerLine, ": ")
 				headerHashmap[result[0]] = result[1]
-				fmt.Printf("Read line: %q\n", headerLine)
+				fmt.Printf("Header line: %q\n", headerLine)
 			}
 			if value, ok := headerHashmap["Content-Length"]; ok {
 				fmt.Println("Found value:", value)
@@ -77,7 +77,7 @@ func main() {
 			if err != nil {
 				fmt.Printf("CRITICAL ERROR DURING READ: %v\n", err)
 			}
-			fmt.Printf("Body payload read via io: %s\n", string(bodyBytes))
+			fmt.Printf("HTTP Body payload: %s\n", string(bodyBytes))
 
 			// ROUTING LOGIC
 			if len(requestParts) != 3 {
