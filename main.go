@@ -36,6 +36,7 @@ func main() {
 			if err != nil {
 				return
 			}
+			println()
 			print("Request Line: ", requestLine)
 
 			requestLine = strings.TrimRight(requestLine, "\r\n")
@@ -50,7 +51,7 @@ func main() {
 				}
 				headerLine = strings.TrimRight(headerLine, "\r\n")
 				if headerLine == "" {
-					println("End")
+					println("--End of Header--")
 					break
 				}
 				result := strings.Split(headerLine, ": ")
@@ -58,7 +59,7 @@ func main() {
 				fmt.Printf("Header line: %q\n", headerLine)
 			}
 			if value, ok := headerHashmap["Content-Length"]; ok {
-				fmt.Println("Found value:", value)
+				fmt.Println("Content-Length Value:", value)
 			} else {
 				fmt.Println("Key not found")
 				return
