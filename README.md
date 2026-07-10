@@ -23,6 +23,11 @@ Each accepted connection spawns its own goroutine via `go handleConnection(conn)
 
 **Why:** Without this, a client that opens a TCP socket and never sends data holds the goroutine forever — a Slowloris primitive. A hard deadline is the simplest defense.
 
+### Request Keep-Alive Loop
+After writing the response, the goroutine loops back to read the next request on the same connection. Exits only on client disconnect (`EOF`) or when the client sends `Connection: close`.
+
+**Why:** Real pages load many resources (CSS, JS, images). Reusing one TCP socket for all of them avoids the TCP handshake + slow-start penalty per file. The loop is the minimum plumbing needed — no connection-level state, no pipelining reordering, just serial request handling on a warm socket.
+
 ### Buffered I/O with `bufio`
 Wraps the raw `net.Conn` in a `bufio.Reader` before reading the request line and headers.
 
