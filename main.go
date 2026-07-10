@@ -54,7 +54,7 @@ func main() {
 				return
 			}
 			if requestParts[0] != "GET" && requestParts[0] != "POST" {
-				MyHTTPMessage(conn, "500", "Not Supported", "Unsupported HTTP Method")
+				MyHTTPMessage(conn, "405", "Method Not Allowed", "Unsupported HTTP Method")
 				return
 			}
 
