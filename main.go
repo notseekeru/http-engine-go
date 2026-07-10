@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -12,7 +13,6 @@ import (
 
 func main() {
 	myListener, err := net.Listen("tcp", ":8080")
-
 	if err != nil {
 		panic(err)
 	}
@@ -103,6 +103,13 @@ func main() {
 			case "/ping":
 				MyHTTPMessage(conn, "200", "OK", "pong")
 				return
+			case "/index.html":
+				data, err := os.ReadFile("index.html")
+				if err != nil {
+					println(err)
+					return
+				}
+				myConnection.Write([]byte(data))
 			default:
 				MyHTTPMessage(conn, "404", "Not Found", "You've have not arrived due to: Not Found")
 				return
@@ -112,7 +119,7 @@ func main() {
 	}
 
 }
-func MyHTTPMessage(myConnection net.Conn, code string, res string, why string) {
+func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, why string) {
 	// Server -> Client. So we use server.
 	datenow := time.Now()
 	server := "GoLang NixOS"
@@ -121,7 +128,7 @@ func MyHTTPMessage(myConnection net.Conn, code string, res string, why string) {
 	bodyLength := strconv.Itoa(len(body))
 	connection := "close"
 
-	serverResponse := "HTTP/1.1 " + code + " " + res + "\r\n" +
+	serverResponse := "HTTP/1.1 " + statusCode + " " + resCode + "\r\n" +
 		"Date: " + datenow.UTC().Format(time.RFC1123) + "\r\n" +
 		"Server: " + server + "\r\n" +
 		"Content-Length: " + bodyLength + "\r\n" +
