@@ -4,7 +4,7 @@ A minimal HTTP/1.1 server built from scratch using only the Go standard library.
 
 This project doesn't include `net/http` as it abstracts away many networking logics needed to bridge networking fundamentals.
 
-The code is made by me and me only, I didn't use AI for coding, logic, and conventions. used AI for syntax, boilerplate and a guide on understanding underlying sytems as such learning buffer streams etc...
+I wrote this code entirely myself without relying on AI for core logic or conventions. I used AI solely for syntax, boilerplate generation, and as a critique tool to better understand underlying systems and hand-picked adviced implementation on engineering the engine.
 
 ## Features
 
