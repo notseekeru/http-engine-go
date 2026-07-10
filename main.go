@@ -50,7 +50,7 @@ func main() {
 				return
 			}
 			if requestParts[2] != "HTTP/1.1" {
-				MyHTTPMessage(conn, "501", "Bad Request", "Not HTTP/1.1")
+				MyHTTPMessage(conn, "400", "Bad Request", "Only HTTP/1.1 supported")
 				return
 			}
 			if requestParts[0] != "GET" && requestParts[0] != "POST" {
