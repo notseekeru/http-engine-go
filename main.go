@@ -98,16 +98,13 @@ func handleConnection(conn net.Conn) {
 
 	switch requestParts[1] {
 	case "/":
-		MyHTTPMessage(conn, "200", "OK", "You've arrived at: /")
+		MyHTTPMessage(conn, "200", "OK", "index.html File Sent", "html")
 		return
 	case "/ping":
 		MyHTTPMessage(conn, "200", "OK", "pong")
 		return
-	case "/index.html":
-		MyHTTPMessage(conn, "200", "OK", "index.html File Sent", "html")
-		return
 	default:
-		MyHTTPMessage(conn, "404", "Not Found", "You've have not arrived due to: Not Found")
+		MyHTTPMessage(conn, "404", "Not Found", "Not Found")
 		return
 	}
 }
