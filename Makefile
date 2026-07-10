@@ -41,3 +41,6 @@ get:
 .PHONY: post
 post:
 	curl -v -X POST -d "hello world" http://localhost:8080/
+
+index:
+	curl -v http://localhost:8080/index.html
