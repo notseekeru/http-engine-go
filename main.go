@@ -53,7 +53,7 @@ func main() {
 				MyHTTPMessage(conn, "501", "Bad Request", "Not HTTP/1.1")
 				return
 			}
-			if requestParts[0] != "GET" && requestParts[0] != "POST" && requestParts[0] != "DELETE" && requestParts[0] != "PUT" {
+			if requestParts[0] != "GET" && requestParts[0] != "POST" {
 				MyHTTPMessage(conn, "500", "Not Supported", "Unsupported HTTP Method")
 				return
 			}
