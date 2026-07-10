@@ -30,6 +30,7 @@ func main() {
 			defer myConnection.Close()
 			myConnection.SetDeadline(time.Now().Add(5 * time.Second))
 
+			headerHashmap := make(map[string]string)
 			reader := bufio.NewReader(myConnection)
 
 			// FIRST REQUEST LINE PARSING OF HTTP MESSAGE
@@ -43,13 +44,26 @@ func main() {
 			requestLine = strings.TrimRight(requestLine, "\r\n")
 			requestParts := strings.Split(requestLine, " ")
 
-			headerHashmap := make(map[string]string)
+			// ROUTING LOGIC
+			if len(requestParts) != 3 {
+				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
+				return
+			}
+			if requestParts[2] != "HTTP/1.1" {
+				MyHTTPMessage(conn, "501", "Bad Request", "Not HTTP/1.1")
+				return
+			}
+			if requestParts[0] != "GET" && requestParts[0] != "POST" && requestParts[0] != "DELETE" && requestParts[0] != "PUT" {
+				MyHTTPMessage(conn, "500", "Not Supported", "Unsupported HTTP Method")
+				return
+			}
 
 			// LOOP THROUGH UNPREDICATABLE HEADER LINE MAP IT USING A HASHMAP
 			for {
 				headerLine, err := reader.ReadString('\n')
 				if err != nil {
-					panic(err)
+					println(err)
+					return
 				}
 				headerLine = strings.TrimRight(headerLine, "\r\n")
 				if headerLine == "" {
@@ -80,20 +94,6 @@ func main() {
 
 			} else {
 				fmt.Println("Key not found")
-			}
-
-			// ROUTING LOGIC
-			if len(requestParts) != 3 {
-				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
-				return
-			}
-			if requestParts[2] != "HTTP/1.1" {
-				MyHTTPMessage(conn, "501", "Bad Request", "Not HTTP/1.1")
-				return
-			}
-			if requestParts[0] != "GET" && requestParts[0] != "POST" && requestParts[0] != "DELETE" && requestParts[0] != "PUT" {
-				MyHTTPMessage(conn, "500", "Not Supported", "Unsupported HTTP Method")
-				return
 			}
 
 			switch requestParts[1] {
