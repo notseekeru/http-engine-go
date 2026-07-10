@@ -93,7 +93,7 @@ func handleConnection(conn net.Conn) {
 		fmt.Printf("HTTP Body payload: %s\n", string(bodyBytes))
 
 	} else {
-		fmt.Println("Key not found")
+		fmt.Println("INF: No HTTP Body payload found")
 	}
 
 	switch requestParts[1] {
@@ -116,24 +116,21 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, mes
 	// Server -> Client
 	datenow := time.Now()
 	server := "GoLang NixOS TCP/HTTP Engine"
-	body := messageBody + "\n"
-	bodyLength := strconv.Itoa(len(body))
-	connection := "close"
+	connection := "keep-alive"
+	var body string
+	var bodyBytes []byte
 	var content string
 
 	if len(contentType) > 0 && contentType[0] == "html" {
 		content = "text/html"
-		data, err := os.ReadFile("index.html")
-		fmt.Printf("index.html file: %q", data)
-		if err != nil {
-			println(err)
-			return
-		}
-		myConnection.Write([]byte(data))
-
+		bodyBytes, _ = os.ReadFile("index.html")
+		body = string(bodyBytes)
 	} else {
+		body = messageBody + "\n"
 		content = "text/plain"
 	}
+
+	bodyLength := strconv.Itoa(len(body))
 
 	serverResponse := "HTTP/1.1 " + statusCode + " " + resCode + "\r\n" +
 		"Date: " + datenow.UTC().Format(time.RFC1123) + "\r\n" +
