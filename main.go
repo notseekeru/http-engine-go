@@ -116,7 +116,8 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, mes
 	// Server -> Client
 	datenow := time.Now()
 	server := "GoLang NixOS TCP/HTTP Engine"
-	bodyLength := strconv.Itoa(len(messageBody))
+	body := messageBody + "\n"
+	bodyLength := strconv.Itoa(len(body))
 	connection := "close"
 	var content string
 
@@ -141,7 +142,7 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, mes
 		"Content-Type: " + content + "\r\n" +
 		"Connection: " + connection + "\r\n" +
 		"\r\n" +
-		messageBody
+		body
 
 	myConnection.Write([]byte(serverResponse))
 }
