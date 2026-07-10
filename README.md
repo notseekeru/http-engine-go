@@ -175,4 +175,4 @@ Implement HTTP/2 framing (frames, streams, HPACK header compression) over TCP wi
 
 **Why:** HTTP/2 eliminates head-of-line blocking and enables multiplexed requests over one connection. h2c sidesteps TLS complexity so you can learn the binary framing protocol in isolation.
 
-**AI HERE:** h2c is a significant project — ~2000+ lines of framing, HPACK, flow control. Only attempt if the goal is understanding the HTTP/2 wire format itself, not just getting a faster server.
+**Note:** h2c is a significant project — ~2000+ lines of framing, HPACK, flow control. Only attempt if the goal is understanding the HTTP/2 wire format itself, not just getting a faster server.
