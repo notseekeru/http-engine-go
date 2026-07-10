@@ -26,101 +26,98 @@ func main() {
 			break
 		}
 
-		go func(myConnection net.Conn) {
-			defer myConnection.Close()
-			myConnection.SetDeadline(time.Now().Add(5 * time.Second))
-
-			headerHashmap := make(map[string]string)
-			reader := bufio.NewReader(myConnection)
-
-			// FIRST REQUEST LINE PARSING OF HTTP MESSAGE
-			requestLine, err := reader.ReadString('\n')
-			if err != nil {
-				return
-			}
-			println()
-			print("Request Line: ", requestLine)
-
-			requestLine = strings.TrimRight(requestLine, "\r\n")
-			requestParts := strings.Split(requestLine, " ")
-
-			// ROUTING LOGIC
-			if len(requestParts) != 3 {
-				MyHTTPMessage(conn, "400", "Bad Request", "Too many")
-				return
-			}
-			if requestParts[2] != "HTTP/1.1" {
-				MyHTTPMessage(conn, "400", "Bad Request", "Only HTTP/1.1 supported")
-				return
-			}
-			if requestParts[0] != "GET" && requestParts[0] != "POST" {
-				MyHTTPMessage(conn, "405", "Method Not Allowed", "Unsupported HTTP Method")
-				return
-			}
-
-			// LOOP THROUGH UNPREDICATABLE HEADER LINE MAP IT USING A HASHMAP
-			for {
-				headerLine, err := reader.ReadString('\n')
-				if err != nil {
-					println(err)
-					return
-				}
-				headerLine = strings.TrimRight(headerLine, "\r\n")
-				if headerLine == "" {
-					println("--End of Header--")
-					break
-				}
-				result := strings.Split(headerLine, ": ")
-				headerHashmap[result[0]] = result[1]
-				fmt.Printf("Header line: %q\n", headerLine)
-			}
-
-			if value, ok := headerHashmap["Content-Length"]; ok {
-				fmt.Println("Content-Length Value:", value)
-				// CONVERT HASHMAP CONTENTLENGTH TO AN INTEGER64
-				strValue := headerHashmap["Content-Length"]
-				intValue64, err := strconv.ParseInt(strValue, 10, 64)
-				if err != nil {
-					fmt.Printf("PARSING ERROR: Could not convert string %q to int: %v\n", strValue, err)
-				}
-
-				// READING THE BODY
-				bodyReader := io.LimitReader(reader, intValue64)
-				bodyBytes, err := io.ReadAll(bodyReader)
-				if err != nil {
-					panic(err)
-				}
-				fmt.Printf("HTTP Body payload: %s\n", string(bodyBytes))
-
-			} else {
-				fmt.Println("Key not found")
-			}
-
-			switch requestParts[1] {
-			case "/":
-				MyHTTPMessage(conn, "200", "OK", "You've arrived at: /")
-				return
-			case "/ping":
-				MyHTTPMessage(conn, "200", "OK", "pong")
-				return
-			case "/index.html":
-				data, err := os.ReadFile("index.html")
-				if err != nil {
-					println(err)
-					return
-				}
-				myConnection.Write([]byte(data))
-			default:
-				MyHTTPMessage(conn, "404", "Not Found", "You've have not arrived due to: Not Found")
-				return
-			}
-		}(conn)
+		go handleConnection(conn)
 
 	}
 
 }
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
+	conn.SetDeadline(time.Now().Add(5 * time.Second))
+
+	headerHashmap := make(map[string]string)
+	reader := bufio.NewReader(conn)
+
+	requestLine, err := reader.ReadString('\n')
+	if err != nil {
+		return
+	}
+	println()
+	print("Request Line: ", requestLine)
+
+	requestLine = strings.TrimRight(requestLine, "\r\n")
+	requestParts := strings.Split(requestLine, " ")
+
+	if len(requestParts) != 3 {
+		MyHTTPMessage(conn, "400", "Bad Request", "Too many")
+		return
+	}
+	if requestParts[2] != "HTTP/1.1" {
+		MyHTTPMessage(conn, "400", "Bad Request", "Only HTTP/1.1 supported")
+		return
+	}
+	if requestParts[0] != "GET" && requestParts[0] != "POST" {
+		MyHTTPMessage(conn, "405", "Method Not Allowed", "Unsupported HTTP Method")
+		return
+	}
+
+	for {
+		headerLine, err := reader.ReadString('\n')
+		if err != nil {
+			println(err)
+			return
+		}
+		headerLine = strings.TrimRight(headerLine, "\r\n")
+		if headerLine == "" {
+			println("--End of Header--")
+			break
+		}
+		result := strings.Split(headerLine, ": ")
+		headerHashmap[result[0]] = result[1]
+		fmt.Printf("Header line: %q\n", headerLine)
+	}
+
+	if value, ok := headerHashmap["Content-Length"]; ok {
+		fmt.Println("Content-Length Value:", value)
+		strValue := headerHashmap["Content-Length"]
+		intValue64, err := strconv.ParseInt(strValue, 10, 64)
+		if err != nil {
+			fmt.Printf("PARSING ERROR: Could not convert string %q to int: %v\n", strValue, err)
+		}
+
+		bodyReader := io.LimitReader(reader, intValue64)
+		bodyBytes, err := io.ReadAll(bodyReader)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("HTTP Body payload: %s\n", string(bodyBytes))
+
+	} else {
+		fmt.Println("Key not found")
+	}
+
+	switch requestParts[1] {
+	case "/":
+		MyHTTPMessage(conn, "200", "OK", "You've arrived at: /")
+		return
+	case "/ping":
+		MyHTTPMessage(conn, "200", "OK", "pong")
+		return
+	case "/index.html":
+		data, err := os.ReadFile("index.html")
+		if err != nil {
+			println(err)
+			return
+		}
+		conn.Write([]byte(data))
+	default:
+		MyHTTPMessage(conn, "404", "Not Found", "You've have not arrived due to: Not Found")
+		return
+	}
+}
+
 func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, why string) {
-	// Server -> Client. So we use server.
+	// Server -> Client
 	datenow := time.Now()
 	server := "GoLang NixOS"
 	content := "text/plain"
