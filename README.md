@@ -4,62 +4,74 @@ A minimal HTTP/1.1 server built from scratch using only the Go standard library.
 
 This project doesn't include `net/http` as it abstracts away many networking logics needed to bridge networking fundamentals.
 
-The code is made by me and me only, I didn't use AI for coding, logic, and conventions. used AI for syntax and a guide on understanding underlying sytems as such learning buffer streams etc...
+The code is made by me and me only, I didn't use AI for coding, logic, and conventions. used AI for syntax, boilerplate and a guide on understanding underlying sytems as such learning buffer streams etc...
 
 ## Features
 
 ### Raw TCP Listener
+
 Binds to `:8080` with `net.Listen` and accepts connections in a loop. No framework wrappers — the socket is yours.
 
 **Why:** You see exactly what `net/http` hides: the listener lifecycle, the `Accept` block, and the deferred `Close` that releases the port.
 
 ### Per-Connection Goroutines
+
 Each accepted connection spawns its own goroutine via `go handleConnection(conn)`. The main loop goes back to listening immediately.
 
 **Why:** Blocking on sequential handling would let one slow client stall everyone. Goroutines give you M:N concurrency with zero thread-pool configuration.
 
 ### Connection Deadline (5s)
+
 `conn.SetDeadline(time.Now().Add(5 * time.Second))` kills unresponsive clients after 5 seconds.
 
 **Why:** Without this, a client that opens a TCP socket and never sends data holds the goroutine forever — a Slowloris primitive. A hard deadline is the simplest defense.
 
 ### Request Keep-Alive Loop
+
 After writing the response, the goroutine loops back to read the next request on the same connection. Exits only on client disconnect (`EOF`) or when the client sends `Connection: close`.
 
 **Why:** Real pages load many resources (CSS, JS, images). Reusing one TCP socket for all of them avoids the TCP handshake + slow-start penalty per file. The loop is the minimum plumbing needed — no connection-level state, no pipelining reordering, just serial request handling on a warm socket.
 
 ### Buffered I/O with `bufio`
+
 Wraps the raw `net.Conn` in a `bufio.Reader` before reading the request line and headers.
 
 **Why:** Raw TCP gives you whatever the kernel delivers — fragmented headers, partial lines, leftover bytes between reads. `bufio.Reader` handles buffering and lets you read line-by-line with `ReadString('\n')`, matching HTTP's line-delimited header format.
 
 ### Request Line Parsing
+
 Splits the first line on spaces into `[Method, Path, Version]`. Rejects anything that doesn't match the triplet format with `400 Bad Request`.
 
 **Why:** HTTP/1.1 mandates `METHOD /path HTTP/1.1`. A malformed request line is unrecoverable — reject early before any header parsing.
 
 ### HTTP Method Validation
+
 Only `GET` and `POST` are accepted. Anything else gets `405 Method Not Allowed`.
 
 **Why:** This engine doesn't implement `PUT`, `DELETE`, etc. Accepting them without implementation would lie to the client. A proper allowlist prevents silent misbehavior.
 
 ### HTTP Version Check
+
 The server only speaks `HTTP/1.1`. Anything else gets `400 Bad Request`.
 
 **Why:** HTTP/1.0 lacks mandatory `Host` headers and connection semantics differ. Supporting multiple versions adds complexity that doesn't fit this project's scope.
 
 ### Header Key-Value Parsing
+
 Iterates header lines until a blank line (`\r\n`) — the end-of-headers marker — then stores each in a `map[string]string`.
 
 **Why:** Headers are structured request metadata (Content-Type, User-Agent, etc.) needed for request routing and body handling. The blank-line delimiter is part of the HTTP spec; matching it exactly is correct parsing, not magic.
 
 ### Content-Length Body Reading
+
 If `Content-Length` is present, parses it to `int64` and reads exactly that many bytes with `io.LimitReader` + `io.ReadAll`.
 
 **Why:** Without `Content-Length`, you don't know where the headers end and the body ends. Reading blindly into the next request (HTTP pipelining) would corrupt data. `LimitReader` bounds the read so a malicious or broken client can't exhaust memory.
 
 ### Route Dispatch
+
 A `switch` on the path:
+
 - `/` → serves `index.html` as `text/html`
 - `/ping` → returns `pong` as `text/plain`
 - anything else → `404 Not Found`
@@ -67,16 +79,19 @@ A `switch` on the path:
 **Why:** Manual dispatch makes routing explicit — no regex, no trie, no framework. You control exactly which paths exist and what they return.
 
 ### Response Builder (`MyHTTPMessage`)
+
 Assembles a full HTTP/1.1 response: status line, `Date`, `Server`, `Content-Length`, `Content-Type`, `Connection` headers, blank line, body. Accepts variadic `contentType` to switch between raw text and HTML file serving.
 
 **Why:** HTTP responses must follow the wire format precisely: status line, headers (each `Key: Value\r\n`), blank line (`\r\n`), body. One function enforces that format in every code path, eliminating duplicate header-writing bugs.
 
 ### File Serving
+
 `/` reads `index.html` from disk via `os.ReadFile` and sends it with `Content-Type: text/html`.
 
 **Why:** Static file serving is the most common HTTP use case. Reading the file once per request is naive (no caching), but it's the simplest implementation that works — and the ceiling is marked for replacement with `os.ReadFile` + sync or in-memory cache.
 
 ### Request Logging to Stdout
+
 Prints the request line and each header key-value pair as they're parsed.
 
 **Why:** When debugging a raw TCP server, you can't use browser devtools — the wire is opaque. Printing each line lets you confirm the parser is consuming exactly what the client sent.
@@ -136,46 +151,55 @@ This is a minimal, educational TCP/HTTP engine. It touches the wire directly so 
 These build on the existing engine in increasing complexity. Ordered from least to most effort.
 
 ### Query String Parsing
+
 Extract `?key=val` from the path into a `map[string]string`.
 
 **Why:** Almost every real endpoint reads query parameters. Without parsing, `/search?q=go` is just `/search` and you lose data.
 
 ### Content-Type Negotiation
+
 Map file extensions (`.html`, `.css`, `.js`, `.png`) to MIME types instead of hardcoding `text/html` or `text/plain`.
 
 **Why:** Browsers rely on `Content-Type` to render resources correctly. Serving CSS as `text/plain` disables styling.
 
 ### Chunked Transfer Encoding
+
 Use `Transfer-Encoding: chunked` to stream bodies without knowing `Content-Length` upfront.
 
 **Why:** Dynamic responses (proxied data, real-time events, large DB results) can't compute their length before sending. Chunked encoding lets you flush data as it arrives.
 
 ### POST Form Parsing (`application/x-www-form-urlencoded`)
+
 Parse URL-encoded bodies (e.g., `name=alice&age=30`) into a key-value map.
 
 **Why:** HTML forms submit as URL-encoded POST by default. Without this, the engine can't receive user input from a browser.
 
 ### Gzip Response Compression
+
 Check for `Accept-Encoding: gzip`, compress the body with `compress/gzip`, and set `Content-Encoding: gzip`.
 
 **Why:** Text compresses 5-10x. Uncompressed HTML/CSS/JS wastes bandwidth and increases page load time on slow networks.
 
 ### ETag / Conditional Requests
+
 Hash the response body, send it as `ETag: "<hash>"`, and return `304 Not Modified` if the client sends `If-None-Match: "<hash>"`.
 
 **Why:** Re-sending unchanged resources wastes bandwidth and battery. Conditional requests let clients cache aggressively and only refetch when content changes.
 
 ### Minimal Router (Prefix Trie)
+
 Replace the `switch` statement with a radix tree that matches paths by prefix and supports path parameters (`/users/:id`).
 
 **Why:** A flat switch doesn't scale past 5-10 routes. A trie gives O(k) matching (k = path length) and supports dynamic segments that the switch can't express.
 
 ### Graceful Shutdown
+
 Catch `SIGINT`/`SIGTERM`, stop accepting new connections, drain active handlers, then exit.
 
 **Why:** Killing the process mid-request drops responses on the floor. A production server must finish in-flight work before shutting down — especially during deploys.
 
 ### HTTP/2 Cleartext (h2c)
+
 Implement HTTP/2 framing (frames, streams, HPACK header compression) over TCP without TLS.
 
 **Why:** HTTP/2 eliminates head-of-line blocking and enables multiplexed requests over one connection. h2c sidesteps TLS complexity so you can learn the binary framing protocol in isolation.
