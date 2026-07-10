@@ -99,9 +99,12 @@ Prints the request line and each header key-value pair as they're parsed.
 ## Imports
 
 - `bufio`
+- `fmt`
 - `io`
 - `net`
+- `os`
 - `strconv`
+- `strings`
 - `time`
 
 ## The Only Net Docs You Need
@@ -131,6 +134,24 @@ Your direct bridge to the operating system's network stack. Manages low-level so
 ### `strconv`
 
 HTTP is a text-based protocol, but computers need numbers. `strconv` converts string representations of numbers (like `"22"`) into integers (`22`) so you can validate and manipulate them. It also converts integers back to strings for generating `Content-Length` headers dynamically.
+
+### `fmt`
+
+Formats and prints request lines, headers, and body info to stdout during parsing.
+
+**Why:** Raw TCP has no request inspector — `fmt.Printf` is your debugger. Without it, parsing bugs are invisible.
+
+### `os`
+
+Reads files from disk (`os.ReadFile`) to serve static content.
+
+**Why:** A TCP/HTTP server that only returns hardcoded strings is useless. `os.ReadFile` bridges the filesystem into the HTTP response pipeline with zero dependencies.
+
+### `strings`
+
+Trims, splits, and normalizes raw HTTP text — removing `\r\n` delimiters, parsing header lines into key-value pairs, and case-folding the `Connection` header for keep-alive logic.
+
+**Why:** HTTP is text. Every line needs trimming, splitting, or comparison. The `strings` package handles all of it without regex overhead.
 
 ### `time`
 
