@@ -125,3 +125,54 @@ Unreliable networks cause connections to hang forever. `time` lets you set absol
 - No connection pooling (each request gets its own goroutine).
 
 This is a minimal, educational TCP/HTTP engine. It touches the wire directly so you understand the raw protocol before using high-level frameworks.
+
+## Optional Features (Not Implemented)
+
+These build on the existing engine in increasing complexity. Ordered from least to most effort.
+
+### Query String Parsing
+Extract `?key=val` from the path into a `map[string]string`.
+
+**Why:** Almost every real endpoint reads query parameters. Without parsing, `/search?q=go` is just `/search` and you lose data.
+
+### Content-Type Negotiation
+Map file extensions (`.html`, `.css`, `.js`, `.png`) to MIME types instead of hardcoding `text/html` or `text/plain`.
+
+**Why:** Browsers rely on `Content-Type` to render resources correctly. Serving CSS as `text/plain` disables styling.
+
+### Chunked Transfer Encoding
+Use `Transfer-Encoding: chunked` to stream bodies without knowing `Content-Length` upfront.
+
+**Why:** Dynamic responses (proxied data, real-time events, large DB results) can't compute their length before sending. Chunked encoding lets you flush data as it arrives.
+
+### POST Form Parsing (`application/x-www-form-urlencoded`)
+Parse URL-encoded bodies (e.g., `name=alice&age=30`) into a key-value map.
+
+**Why:** HTML forms submit as URL-encoded POST by default. Without this, the engine can't receive user input from a browser.
+
+### Gzip Response Compression
+Check for `Accept-Encoding: gzip`, compress the body with `compress/gzip`, and set `Content-Encoding: gzip`.
+
+**Why:** Text compresses 5-10x. Uncompressed HTML/CSS/JS wastes bandwidth and increases page load time on slow networks.
+
+### ETag / Conditional Requests
+Hash the response body, send it as `ETag: "<hash>"`, and return `304 Not Modified` if the client sends `If-None-Match: "<hash>"`.
+
+**Why:** Re-sending unchanged resources wastes bandwidth and battery. Conditional requests let clients cache aggressively and only refetch when content changes.
+
+### Minimal Router (Prefix Trie)
+Replace the `switch` statement with a radix tree that matches paths by prefix and supports path parameters (`/users/:id`).
+
+**Why:** A flat switch doesn't scale past 5-10 routes. A trie gives O(k) matching (k = path length) and supports dynamic segments that the switch can't express.
+
+### Graceful Shutdown
+Catch `SIGINT`/`SIGTERM`, stop accepting new connections, drain active handlers, then exit.
+
+**Why:** Killing the process mid-request drops responses on the floor. A production server must finish in-flight work before shutting down — especially during deploys.
+
+### HTTP/2 Cleartext (h2c)
+Implement HTTP/2 framing (frames, streams, HPACK header compression) over TCP without TLS.
+
+**Why:** HTTP/2 eliminates head-of-line blocking and enables multiplexed requests over one connection. h2c sidesteps TLS complexity so you can learn the binary framing protocol in isolation.
+
+**AI HERE:** h2c is a significant project — ~2000+ lines of framing, HPACK, flow control. Only attempt if the goal is understanding the HTTP/2 wire format itself, not just getting a faster server.
