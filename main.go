@@ -104,25 +104,35 @@ func handleConnection(conn net.Conn) {
 		MyHTTPMessage(conn, "200", "OK", "pong")
 		return
 	case "/index.html":
-		data, err := os.ReadFile("index.html")
-		if err != nil {
-			println(err)
-			return
-		}
-		conn.Write([]byte(data))
+		MyHTTPMessage(conn, "200", "OK", "index.html File Sent", "html")
+		return
 	default:
 		MyHTTPMessage(conn, "404", "Not Found", "You've have not arrived due to: Not Found")
 		return
 	}
 }
 
-func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, message string) {
+func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, messageBody string, contentType ...string) {
 	// Server -> Client
 	datenow := time.Now()
-	server := "GoLang NixOS"
-	content := "text/plain"
-	bodyLength := strconv.Itoa(len(message) + 1)
+	server := "GoLang NixOS TCP/HTTP Engine"
+	bodyLength := strconv.Itoa(len(messageBody) + 1)
 	connection := "close"
+	var content string
+
+	if len(contentType) > 0 && contentType[0] == "html" {
+		content = "text/html"
+		data, err := os.ReadFile("index.html")
+		fmt.Printf("index.html file: %q", data)
+		if err != nil {
+			println(err)
+			return
+		}
+		myConnection.Write([]byte(data))
+
+	} else {
+		content = "text/plain"
+	}
 
 	serverResponse := "HTTP/1.1 " + statusCode + " " + resCode + "\r\n" +
 		"Date: " + datenow.UTC().Format(time.RFC1123) + "\r\n" +
@@ -131,7 +141,7 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, mes
 		"Content-Type: " + content + "\r\n" +
 		"Connection: " + connection + "\r\n" +
 		"\r\n" +
-		message + "\n"
+		messageBody + "\n"
 
 	myConnection.Write([]byte(serverResponse))
 }
