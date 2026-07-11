@@ -44,3 +44,6 @@ post:
 
 index:
 	curl -v http://localhost:8080/index.html
+
+query:
+	curl -v "http://localhost:8080/api?age=18&name=mark"
