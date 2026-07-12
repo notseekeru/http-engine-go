@@ -52,16 +52,19 @@ func handleConnection(conn net.Conn) {
 		requestParts := strings.Split(requestLine, " ")
 
 		requestQuery := requestParts[1]
-		requestQueryStripped := strings.Split(requestQuery, "?")
-		queryParametersHashmap["endpoint"] = requestQueryStripped[0]
-		requestParameters := requestQueryStripped[1]
-		requestParametersStripped := strings.Split(requestParameters, "&")
-		fmt.Printf("requestParametersStripped: %s\n", requestParametersStripped)
 
-		for _, value := range requestParametersStripped {
-			result := strings.Split(value, "=")
-			queryParametersHashmap[result[0]] = result[1]
-			fmt.Printf("%s\n", queryParametersHashmap)
+		if strings.Contains(requestQuery, "?") {
+			requestQueryStripped := strings.Split(requestQuery, "?")
+			queryParametersHashmap["endpoint"] = requestQueryStripped[0]
+			requestParameters := requestQueryStripped[1]
+			requestParametersStripped := strings.Split(requestParameters, "&")
+			fmt.Printf("requestParametersStripped: %s\n", requestParametersStripped)
+
+			for _, value := range requestParametersStripped {
+				result := strings.Split(value, "=")
+				queryParametersHashmap[result[0]] = result[1]
+				fmt.Printf("%s\n", queryParametersHashmap)
+			}
 		}
 
 		if len(requestParts) != 3 {
