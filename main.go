@@ -38,6 +38,7 @@ func handleConnection(conn net.Conn) {
 	for {
 		conn.SetDeadline(time.Now().Add(5 * time.Second))
 
+		queryParametersHashmap := make(map[string]string)
 		headerHashmap := make(map[string]string)
 
 		requestLine, err := reader.ReadString('\n')
@@ -49,6 +50,19 @@ func handleConnection(conn net.Conn) {
 
 		requestLine = strings.TrimRight(requestLine, "\r\n")
 		requestParts := strings.Split(requestLine, " ")
+
+		requestQuery := requestParts[1]
+		requestQueryStripped := strings.Split(requestQuery, "?")
+		queryParametersHashmap["endpoint"] = requestQueryStripped[0]
+		requestParameters := requestQueryStripped[1]
+		requestParametersStripped := strings.Split(requestParameters, "&")
+		fmt.Printf("requestParametersStripped: %s\n", requestParametersStripped)
+
+		for _, value := range requestParametersStripped {
+			result := strings.Split(value, "=")
+			queryParametersHashmap[result[0]] = result[1]
+			fmt.Printf("%s\n", queryParametersHashmap)
+		}
 
 		if len(requestParts) != 3 {
 			MyHTTPMessage(conn, "400", "Bad Request", "Too many")
