@@ -68,15 +68,23 @@ If `Content-Length` is present, parses it to `int64` and reads exactly that many
 
 **Why:** Without `Content-Length`, you don't know where the headers end and the body ends. Reading blindly into the next request (HTTP pipelining) would corrupt data. `LimitReader` bounds the read so a malicious or broken client can't exhaust memory.
 
+### Query String Parsing
+
+Extracts `?key=val` from the request path into `map[string]string` with the endpoint path stored under the `"endpoint"` key. Guarded against paths without `?`.
+
+**Why:** Real endpoints read query parameters. Without parsing, `/search?q=go` is just `/search` and you lose data.
+
 ### Route Dispatch
 
-A `switch` on the path:
+A `switch` on the raw request path (`requestParts[1]`):
 
 - `/` → serves `index.html` as `text/html`
 - `/ping` → returns `pong` as `text/plain`
 - anything else → `404 Not Found`
 
 **Why:** Manual dispatch makes routing explicit — no regex, no trie, no framework. You control exactly which paths exist and what they return.
+
+**Note:** Query parameters are parsed but the route switch still matches the full raw path — a request to `/ping?foo=bar` won't match the `/ping` case. This is a known gap for later fixing.
 
 ### Response Builder (`MyHTTPMessage`)
 
@@ -170,12 +178,6 @@ This is a minimal, educational TCP/HTTP engine. It touches the wire directly so 
 ## Optional Features (Not Implemented)
 
 These build on the existing engine in increasing complexity. Ordered from least to most effort.
-
-### Query String Parsing
-
-Extract `?key=val` from the path into a `map[string]string`.
-
-**Why:** Almost every real endpoint reads query parameters. Without parsing, `/search?q=go` is just `/search` and you lose data.
 
 ### Content-Type Negotiation
 
