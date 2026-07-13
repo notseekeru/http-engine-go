@@ -6,6 +6,10 @@ This project doesn't include `net/http` as it abstracts away many networking log
 
 I wrote this code entirely myself without relying on AI for core logic or conventions. I used AI solely for syntax, boilerplate generation, and as a critique tool to better understand underlying systems and hand-picked adviced implementation on engineering the engine.
 
+The system might be flawed as it doesn't include extensive error handling due and logical bugs to it being a learning project.
+
+AI is used here to produce the following boilerplate reasonings:
+
 ## Features
 
 ### Raw TCP Listener
