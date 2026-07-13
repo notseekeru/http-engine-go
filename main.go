@@ -46,8 +46,6 @@ func handleConnection(conn net.Conn) {
 		if err != nil {
 			return
 		}
-		println()
-		print("INF: Request Line: ", requestLine)
 
 		requestLine = strings.TrimRight(requestLine, "\r\n")
 		requestParts := strings.Split(requestLine, " ")
@@ -56,34 +54,27 @@ func handleConnection(conn net.Conn) {
 
 		if strings.Contains(requestQuery, "?") {
 			requestEndpoint, requestQueryStripped, found := strings.Cut(requestQuery, "?")
-			println(found)
 			if found {
-				fmt.Println("INF: Base Endpoint: ", requestEndpoint)
-				fmt.Println("INF: Query String: ", requestQueryStripped)
 				queryParametersHashmap["endpoint"] = requestEndpoint
 			} else {
 				requestQueryTrimmed := strings.TrimRight(requestQuery, "?")
 				queryParametersHashmap["endpoint"] = requestQueryTrimmed
 
 			}
-			println(queryParametersHashmap["endpoint"])
+
 			var requestParametersStripped []string
 			requestParameters := requestQueryStripped
-			if strings.Contains(requestParameters, "&") {
-				requestParametersStripped = strings.Split(requestParameters, "&")
-			}
 
+			requestParametersStripped = strings.Split(requestParameters, "&")
 			if slices.Contains(requestParametersStripped, "") {
 				println("ERR: slice contained \"\"")
 				return
 			}
-
-			fmt.Printf("INF: requestParametersStripped: %s\n", requestParametersStripped)
-
 			for _, value := range requestParametersStripped {
 				result := strings.Split(value, "=")
 				queryParametersHashmap[result[0]] = result[1]
 			}
+
 		} else {
 			queryParametersHashmap["endpoint"] = requestQuery
 		}
