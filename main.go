@@ -72,6 +72,10 @@ func handleConnection(conn net.Conn) {
 			}
 			for _, value := range requestParametersStripped {
 				result := strings.Split(value, "=")
+				if len(result) != 2 {
+					println("ERR: len(result) is not 2")
+					return
+				}
 				queryParametersHashmap[result[0]] = result[1]
 			}
 
@@ -152,12 +156,15 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, mes
 	server := "GoLang NixOS TCP/HTTP Engine"
 	connection := "keep-alive"
 	var body string
-	var bodyBytes []byte
 	var content string
 
 	if len(contentType) > 0 && contentType[0] == "html" {
 		content = "text/html"
-		bodyBytes, _ = os.ReadFile("index.html")
+		bodyBytes, err := os.ReadFile("index.html")
+		if err != nil {
+			println(err.Error())
+			return
+		}
 		body = string(bodyBytes)
 	} else {
 		body = messageBody + "\n"
