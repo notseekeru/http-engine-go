@@ -47,7 +47,7 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 		println()
-		print("Request Line: ", requestLine)
+		print("INF: Request Line: ", requestLine)
 
 		requestLine = strings.TrimRight(requestLine, "\r\n")
 		requestParts := strings.Split(requestLine, " ")
@@ -56,11 +56,17 @@ func handleConnection(conn net.Conn) {
 
 		if strings.Contains(requestQuery, "?") {
 			requestEndpoint, requestQueryStripped, found := strings.Cut(requestQuery, "?")
+			println(found)
 			if found {
-				fmt.Println("Base Endpoint:    ", requestEndpoint)
-				fmt.Println("Query String:", requestQueryStripped)
+				fmt.Println("INF: Base Endpoint: ", requestEndpoint)
+				fmt.Println("INF: Query String: ", requestQueryStripped)
+				queryParametersHashmap["endpoint"] = requestEndpoint
+			} else {
+				requestQueryTrimmed := strings.TrimRight(requestQuery, "?")
+				queryParametersHashmap["endpoint"] = requestQueryTrimmed
+
 			}
-			queryParametersHashmap["endpoint"] = requestEndpoint
+			println(queryParametersHashmap["endpoint"])
 			var requestParametersStripped []string
 			requestParameters := requestQueryStripped
 			if strings.Contains(requestParameters, "&") {
@@ -68,17 +74,18 @@ func handleConnection(conn net.Conn) {
 			}
 
 			if slices.Contains(requestParametersStripped, "") {
-				println("err: slice contained \"\"")
+				println("ERR: slice contained \"\"")
 				return
 			}
 
-			fmt.Printf("requestParametersStripped: %s\n", requestParametersStripped)
+			fmt.Printf("INF: requestParametersStripped: %s\n", requestParametersStripped)
 
 			for _, value := range requestParametersStripped {
 				result := strings.Split(value, "=")
 				queryParametersHashmap[result[0]] = result[1]
-				fmt.Printf("%s\n", queryParametersHashmap)
 			}
+		} else {
+			queryParametersHashmap["endpoint"] = requestQuery
 		}
 
 		if len(requestParts) != 3 {
@@ -102,12 +109,12 @@ func handleConnection(conn net.Conn) {
 			}
 			headerLine = strings.TrimRight(headerLine, "\r\n")
 			if headerLine == "" {
-				println("--End of Header--")
+				println("INF: --End of Header--")
 				break
 			}
 			result := strings.Split(headerLine, ": ")
 			headerHashmap[result[0]] = result[1]
-			fmt.Printf("Header line: %q\n", headerLine)
+			fmt.Printf("INF: Header line: %q\n", headerLine)
 		}
 
 		if value, ok := headerHashmap["Content-Length"]; ok {
@@ -133,7 +140,6 @@ func handleConnection(conn net.Conn) {
 		} else {
 			fmt.Println("INF: No HTTP Body payload found")
 		}
-		println(queryParametersHashmap["endpoint"])
 		switch queryParametersHashmap["endpoint"] {
 		case "/":
 			MyHTTPMessage(conn, "200", "OK", "index.html File Sent", "html")
