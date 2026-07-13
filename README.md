@@ -80,7 +80,7 @@ Extracts `?key=val` from the request path into `map[string]string` with the endp
 
 ### Route Dispatch
 
-A `switch` on the extracted endpoint (`queryParametersHashmap["endpoint"]`):
+A `switch` on the extracted endpoint (`queryMap["endpoint"]`):
 
 - `/` → serves `index.html` as `text/html`
 - `/ping` → returns `pong` as `text/plain`
