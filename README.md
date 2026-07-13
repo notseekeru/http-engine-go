@@ -68,19 +68,19 @@ Iterates header lines until a blank line (`\r\n`) — the end-of-headers marker 
 
 ### Content-Length Body Reading
 
-If `Content-Length` is present, parses it to `int64` and reads exactly that many bytes with `io.LimitReader` + `io.ReadAll`.
+If `Content-Length` is present, parses it to `int64`. If zero, the body read is skipped. Otherwise reads exactly that many bytes with `io.LimitReader` + `io.ReadAll`.
 
-**Why:** Without `Content-Length`, you don't know where the headers end and the body ends. Reading blindly into the next request (HTTP pipelining) would corrupt data. `LimitReader` bounds the read so a malicious or broken client can't exhaust memory.
+**Why:** Without `Content-Length`, you don't know where the headers end and the body ends. Reading blindly into the next request (HTTP pipelining) would corrupt data. `LimitReader` bounds the read so a malicious or broken client can't exhaust memory. The zero check avoids a pointless no-op read.
 
 ### Query String Parsing
 
-Extracts `?key=val` from the request path into `map[string]string` with the endpoint path stored under the `"endpoint"` key. Guarded against paths without `?`.
+Extracts `?key=val` from the request path into `map[string]string` with the endpoint path stored under the `"endpoint"` key. Malformed queries (trailing `&`, missing value) return `400 Bad Request`.
 
 **Why:** Real endpoints read query parameters. Without parsing, `/search?q=go` is just `/search` and you lose data.
 
 ### Route Dispatch
 
-A `switch` on the raw request path (`requestParts[1]`):
+A `switch` on the extracted endpoint (`queryParametersHashmap["endpoint"]`):
 
 - `/` → serves `index.html` as `text/html`
 - `/ping` → returns `pong` as `text/plain`
@@ -88,7 +88,7 @@ A `switch` on the raw request path (`requestParts[1]`):
 
 **Why:** Manual dispatch makes routing explicit — no regex, no trie, no framework. You control exactly which paths exist and what they return.
 
-**Note:** Query parameters are parsed but the route switch still matches the full raw path — a request to `/ping?foo=bar` won't match the `/ping` case. This is a known gap for later fixing.
+Query parameters are stripped before dispatch, so `/ping?foo=bar` correctly matches the `/ping` case.
 
 ### Response Builder (`MyHTTPMessage`)
 
@@ -98,7 +98,7 @@ Assembles a full HTTP/1.1 response: status line, `Date`, `Server`, `Content-Leng
 
 ### File Serving
 
-`/` reads `index.html` from disk via `os.ReadFile` and sends it with `Content-Type: text/html`.
+`/` reads `index.html` from disk via `os.ReadFile` and sends it with `Content-Type: text/html`. Returns early if the file is missing.
 
 **Why:** Static file serving is the most common HTTP use case. Reading the file once per request is naive (no caching), but it's the simplest implementation that works — and the ceiling is marked for replacement with `os.ReadFile` + sync or in-memory cache.
 
