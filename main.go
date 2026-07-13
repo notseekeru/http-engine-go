@@ -15,7 +15,8 @@ import (
 func main() {
 	myListener, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		panic(err)
+		println(err.Error())
+		return
 	}
 
 	defer myListener.Close()
@@ -23,7 +24,7 @@ func main() {
 	for {
 		conn, err := myListener.Accept()
 		if err != nil {
-			println(err)
+			println(err.Error())
 			break
 		}
 
@@ -95,7 +96,7 @@ func handleConnection(conn net.Conn) {
 		for {
 			headerLine, err := reader.ReadString('\n')
 			if err != nil {
-				println(err)
+				println(err.Error())
 				return
 			}
 			headerLine = strings.TrimRight(headerLine, "\r\n")
@@ -122,7 +123,8 @@ func handleConnection(conn net.Conn) {
 				bodyReader := io.LimitReader(reader, intValue64)
 				bodyBytes, err := io.ReadAll(bodyReader)
 				if err != nil {
-					panic(err)
+					println(err.Error())
+					return
 				}
 				fmt.Printf("INF: HTTP Body payload: %s\n", string(bodyBytes))
 			}
