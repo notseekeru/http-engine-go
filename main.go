@@ -56,10 +56,6 @@ func handleConnection(conn net.Conn) {
 			requestEndpoint, requestQueryStripped, found := strings.Cut(requestQuery, "?")
 			if found {
 				queryParametersHashmap["endpoint"] = requestEndpoint
-			} else {
-				requestQueryTrimmed := strings.TrimRight(requestQuery, "?")
-				queryParametersHashmap["endpoint"] = requestQueryTrimmed
-
 			}
 
 			var requestParametersStripped []string
@@ -122,14 +118,14 @@ func handleConnection(conn net.Conn) {
 
 			if intValue64 == 0 {
 				println("INF: Content-Length = 0, skipping body read")
+			} else {
+				bodyReader := io.LimitReader(reader, intValue64)
+				bodyBytes, err := io.ReadAll(bodyReader)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Printf("INF: HTTP Body payload: %s\n", string(bodyBytes))
 			}
-
-			bodyReader := io.LimitReader(reader, intValue64)
-			bodyBytes, err := io.ReadAll(bodyReader)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("INF: HTTP Body payload: %s\n", string(bodyBytes))
 
 		} else {
 			fmt.Println("INF: No HTTP Body payload found")
