@@ -61,9 +61,8 @@ func handleConnection(conn net.Conn) {
 				fmt.Println("Query String:", requestQueryStripped)
 			}
 			queryParametersHashmap["endpoint"] = requestEndpoint
-			var requestParameters string
 			var requestParametersStripped []string
-			requestParameters = requestQueryStripped
+			requestParameters := requestQueryStripped
 			if strings.Contains(requestParameters, "&") {
 				requestParametersStripped = strings.Split(requestParameters, "&")
 			}
@@ -116,7 +115,12 @@ func handleConnection(conn net.Conn) {
 			strValue := headerHashmap["Content-Length"]
 			intValue64, err := strconv.ParseInt(strValue, 10, 64)
 			if err != nil {
-				fmt.Printf("PARSING ERROR: Could not convert string %q to int: %v\n", strValue, err)
+				fmt.Printf("ERR: Could not convert string %q to int: %v\n", strValue, err)
+			}
+
+			if intValue64 == 0 {
+				println("WARN: Content-Length = 0")
+				break
 			}
 
 			bodyReader := io.LimitReader(reader, intValue64)
@@ -124,13 +128,13 @@ func handleConnection(conn net.Conn) {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("HTTP Body payload: %s\n", string(bodyBytes))
+			fmt.Printf("INF: HTTP Body payload: %s\n", string(bodyBytes))
 
 		} else {
 			fmt.Println("INF: No HTTP Body payload found")
 		}
-
-		switch requestParts[1] {
+		println(queryParametersHashmap["endpoint"])
+		switch queryParametersHashmap["endpoint"] {
 		case "/":
 			MyHTTPMessage(conn, "200", "OK", "index.html File Sent", "html")
 		case "/ping":
