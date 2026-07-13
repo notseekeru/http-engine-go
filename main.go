@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -54,10 +55,24 @@ func handleConnection(conn net.Conn) {
 		requestQuery := requestParts[1]
 
 		if strings.Contains(requestQuery, "?") {
-			requestQueryStripped := strings.Split(requestQuery, "?")
-			queryParametersHashmap["endpoint"] = requestQueryStripped[0]
-			requestParameters := requestQueryStripped[1]
-			requestParametersStripped := strings.Split(requestParameters, "&")
+			requestEndpoint, requestQueryStripped, found := strings.Cut(requestQuery, "?")
+			if found {
+				fmt.Println("Base Endpoint:    ", requestEndpoint)
+				fmt.Println("Query String:", requestQueryStripped)
+			}
+			queryParametersHashmap["endpoint"] = requestEndpoint
+			var requestParameters string
+			var requestParametersStripped []string
+			requestParameters = requestQueryStripped
+			if strings.Contains(requestParameters, "&") {
+				requestParametersStripped = strings.Split(requestParameters, "&")
+			}
+
+			if slices.Contains(requestParametersStripped, "") {
+				println("err: slice contained \"\"")
+				return
+			}
+
 			fmt.Printf("requestParametersStripped: %s\n", requestParametersStripped)
 
 			for _, value := range requestParametersStripped {
