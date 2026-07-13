@@ -67,13 +67,13 @@ func handleConnection(conn net.Conn) {
 
 			requestParametersStripped = strings.Split(requestParameters, "&")
 			if slices.Contains(requestParametersStripped, "") {
-				println("ERR: slice contained \"\"")
+				MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
 				return
 			}
 			for _, value := range requestParametersStripped {
 				result := strings.Split(value, "=")
 				if len(result) != 2 {
-					println("ERR: len(result) is not 2")
+					MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
 					return
 				}
 				queryParametersHashmap[result[0]] = result[1]
@@ -121,8 +121,7 @@ func handleConnection(conn net.Conn) {
 			}
 
 			if intValue64 == 0 {
-				println("WARN: Content-Length = 0")
-				break
+				println("INF: Content-Length = 0, skipping body read")
 			}
 
 			bodyReader := io.LimitReader(reader, intValue64)
