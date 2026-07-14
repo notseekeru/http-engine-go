@@ -33,6 +33,7 @@ func main() {
 	}
 
 }
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
@@ -40,8 +41,8 @@ func handleConnection(conn net.Conn) {
 	for {
 		conn.SetDeadline(time.Now().Add(5 * time.Second))
 
-		queryParametersHashmap := make(map[string]string)
-		headerHashmap := make(map[string]string)
+		queryMap := make(map[string]string)
+		headerMap := make(map[string]string)
 
 		requestLine, err := reader.ReadString('\n')
 		if err != nil {
@@ -50,35 +51,6 @@ func handleConnection(conn net.Conn) {
 
 		requestLine = strings.TrimRight(requestLine, "\r\n")
 		requestParts := strings.Split(requestLine, " ")
-
-		requestQuery := requestParts[1]
-
-		if strings.Contains(requestQuery, "?") {
-			requestEndpoint, requestQueryStripped, found := strings.Cut(requestQuery, "?")
-			if found {
-				queryParametersHashmap["endpoint"] = requestEndpoint
-			}
-
-			var requestParametersStripped []string
-			requestParameters := requestQueryStripped
-
-			requestParametersStripped = strings.Split(requestParameters, "&")
-			if slices.Contains(requestParametersStripped, "") {
-				MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
-				return
-			}
-			for _, value := range requestParametersStripped {
-				result := strings.Split(value, "=")
-				if len(result) != 2 {
-					MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
-					return
-				}
-				queryParametersHashmap[result[0]] = result[1]
-			}
-
-		} else {
-			queryParametersHashmap["endpoint"] = requestQuery
-		}
 
 		if len(requestParts) != 3 {
 			MyHTTPMessage(conn, "400", "Bad Request", "Too many")
@@ -93,6 +65,34 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 
+		relativeURI := requestParts[1]
+
+		if strings.Contains(relativeURI, "?") {
+			endpoint, queryStripped, found := strings.Cut(relativeURI, "?")
+			if found {
+				queryMap["endpoint"] = endpoint
+			}
+
+			paramaters := queryStripped
+
+			paramatersStripped := strings.Split(paramaters, "&")
+			if slices.Contains(paramatersStripped, "") {
+				MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
+				return
+			}
+			for _, value := range paramatersStripped {
+				resultKV := strings.Split(value, "=")
+				if len(resultKV) != 2 {
+					MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
+					return
+				}
+				queryMap[resultKV[0]] = resultKV[1]
+			}
+
+		} else {
+			queryMap["endpoint"] = relativeURI
+		}
+
 		for {
 			headerLine, err := reader.ReadString('\n')
 			if err != nil {
@@ -104,14 +104,14 @@ func handleConnection(conn net.Conn) {
 				println("INF: --End of Header--")
 				break
 			}
-			result := strings.Split(headerLine, ": ")
-			headerHashmap[result[0]] = result[1]
+			headerParts := strings.Split(headerLine, ": ")
+			headerMap[headerParts[0]] = headerParts[1]
 			fmt.Printf("INF: Header line: %q\n", headerLine)
 		}
 
-		if value, ok := headerHashmap["Content-Length"]; ok {
+		if value, ok := headerMap["Content-Length"]; ok {
 			fmt.Println("Content-Length Value:", value)
-			strValue := headerHashmap["Content-Length"]
+			strValue := headerMap["Content-Length"]
 			intValue64, err := strconv.ParseInt(strValue, 10, 64)
 			if err != nil {
 				fmt.Printf("ERR: Could not convert string %q to int: %v\n", strValue, err)
@@ -132,7 +132,7 @@ func handleConnection(conn net.Conn) {
 		} else {
 			fmt.Println("INF: No HTTP Body payload found")
 		}
-		switch queryParametersHashmap["endpoint"] {
+		switch queryMap["endpoint"] {
 		case "/":
 			MyHTTPMessage(conn, "200", "OK", "index.html File Sent", "html")
 		case "/ping":
@@ -141,17 +141,16 @@ func handleConnection(conn net.Conn) {
 			MyHTTPMessage(conn, "404", "Not Found", "Not Found")
 		}
 
-		if strings.ToLower(headerHashmap["Connection"]) == "close" {
+		if strings.ToLower(headerMap["Connection"]) == "close" {
 			return
 		}
 	}
 }
 
-func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, messageBody string, contentType ...string) {
+func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string, messageBody string, contentType ...string) {
 	// Server -> Client
 	datenow := time.Now()
 	server := "GoLang NixOS TCP/HTTP Engine"
-	connection := "keep-alive"
 	var body string
 	var content string
 
@@ -170,12 +169,12 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, resCode string, mes
 
 	bodyLength := strconv.Itoa(len(body))
 
-	serverResponse := "HTTP/1.1 " + statusCode + " " + resCode + "\r\n" +
+	serverResponse := "HTTP/1.1 " + statusCode + " " + statusPhrase + "\r\n" +
 		"Date: " + datenow.UTC().Format(time.RFC1123) + "\r\n" +
 		"Server: " + server + "\r\n" +
 		"Content-Length: " + bodyLength + "\r\n" +
 		"Content-Type: " + content + "\r\n" +
-		"Connection: " + connection + "\r\n" +
+		"Connection: " + "keep-alive" + "\r\n" +
 		"\r\n" +
 		body
 
