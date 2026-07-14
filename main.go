@@ -107,12 +107,13 @@ func handleConnection(conn net.Conn) {
 				log.Printf("Could not convert string %q to int: %v", strValue, err)
 			}
 
-			if intValue64 > 0 && intValue64 <= 9999999 {
-				_, err := io.CopyN(io.Discard, reader, intValue64)
+			if intValue64 > 0 && intValue64 <= 9999999 && requestParts[0] == "POST" {
+				bodyBytes, err := io.ReadAll(io.LimitReader(reader, intValue64))
 				if err != nil {
 					log.Print(err.Error())
 					return
 				}
+				log.Printf("DEBUG: POST body: %s", bodyBytes)
 			}
 
 		}
@@ -123,7 +124,7 @@ func handleConnection(conn net.Conn) {
 		case "/ping":
 			MyHTTPMessage(conn, "200", "OK", "pong")
 		default:
-			MyHTTPMessage(conn, "404", "Not Found", "Not Found")
+			MyHTTPMessage(conn, "404", "Not Found")
 		}
 
 		if strings.ToLower(headerMap["Connection"]) == "close" {
