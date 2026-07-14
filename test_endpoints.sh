@@ -42,22 +42,22 @@ echo "$R"
 check "/nonexistent 404" "404 Not Found" "$R"
 
 echo ""
-echo "=== GET with queryFull params ==="
+echo "=== GET with relativeURI params ==="
 R=$(printf "GET /ping?foo=bar&baz=qux HTTP/1.1\r\nHost: $HOST\r\nConnection: close\r\n\r\n" | req localhost 8080)
 echo "$R"
-check "queryFull params 200" "200 OK" "$R"
+check "relativeURI params 200" "200 OK" "$R"
 
 echo ""
-echo "=== GET malformed queryFull (trailing &) ==="
+echo "=== GET malformed relativeURI (trailing &) ==="
 R=$(printf "GET /ping?foo=bar& HTTP/1.1\r\nHost: $HOST\r\nConnection: close\r\n\r\n" | req localhost 8080)
 echo "$R"
 if ! echo "$R" | grep -qi "panic"; then ok "trailing & no crash"; else fail "trailing & no crash"; fi
 
 echo ""
-echo "=== GET malformed queryFull (no value) ==="
+echo "=== GET malformed relativeURI (no value) ==="
 R=$(printf "GET /ping?foo HTTP/1.1\r\nHost: $HOST\r\nConnection: close\r\n\r\n" | req localhost 8080)
 echo "$R"
-if ! echo "$R" | grep -qi "panic"; then ok "no-value queryFull no crash"; else fail "no-value queryFull no crash"; fi
+if ! echo "$R" | grep -qi "panic"; then ok "no-value relativeURI no crash"; else fail "no-value relativeURI no crash"; fi
 
 echo ""
 echo "=== POST /ping ==="
