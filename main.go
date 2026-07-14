@@ -166,7 +166,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 
 	switch contentSlice[1] {
 	case "html":
-		bodyBytes, err := os.ReadFile("index.html")
+		bodyBytes, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Print(err.Error())
 			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
@@ -176,7 +176,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 		contentType = "text/html"
 
 	case "css":
-		bodyBytes, err := os.ReadFile("styles.css")
+		bodyBytes, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Print(err.Error())
 			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
@@ -186,7 +186,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 		contentType = "text/css"
 
 	case "js":
-		bodyBytes, err := os.ReadFile("index.js")
+		bodyBytes, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Print(err.Error())
 			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
