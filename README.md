@@ -68,9 +68,9 @@ Iterates header lines until a blank line (`\r\n`) — the end-of-headers marker 
 
 ### Content-Length Body Reading
 
-If `Content-Length` is present, parses it to `int64`. If zero, the body read is skipped. Otherwise reads exactly that many bytes with `io.LimitReader` + `io.ReadAll`.
+If `Content-Length` is present, parses it to `int64`. If the method is `POST`, reads exactly that many bytes with `io.LimitReader` + `io.ReadAll` and logs the body. Non-POST bodies are ignored entirely.
 
-**Why:** Without `Content-Length`, you don't know where the headers end and the body ends. Reading blindly into the next request (HTTP pipelining) would corrupt data. `LimitReader` bounds the read so a malicious or broken client can't exhaust memory. The zero check avoids a pointless no-op read.
+**Why:** Without `Content-Length`, you don't know where the headers end and the body ends. Reading blindly into the next request (HTTP pipelining) would corrupt data. `LimitReader` bounds the read so a malicious or broken client can't exhaust memory. POST-only logging avoids noise from GET/HEAD bodies that most clients never send.
 
 ### Query String Parsing
 
@@ -82,7 +82,7 @@ Extracts `?key=val` from the request path into `map[string]string` with the endp
 
 A `switch` on the extracted endpoint (`queryMap["endpoint"]`):
 
-- `/` → serves `index.html` as `text/html`
+- `/` → `HTTPFileServe` serves `index.html` with auto-detected `Content-Type`
 - `/ping` → returns `pong` as `text/plain`
 - anything else → `404 Not Found`
 
@@ -92,29 +92,36 @@ Query parameters are stripped before dispatch, so `/ping?foo=bar` correctly matc
 
 ### Response Builder (`MyHTTPMessage`)
 
-Assembles a full HTTP/1.1 response: status line, `Date`, `Server`, `Content-Length`, `Content-Type`, `Connection` headers, blank line, body. Accepts variadic `contentType` to switch between raw text and HTML file serving.
+Assembles a full HTTP/1.1 response: status line, `Date`, `Server`, `Content-Length`, `Content-Type`, `Connection` headers, blank line, body. Accepts variadic message body parts (joined with no separator) and always sets `Content-Type` to `text/plain`.
 
 **Why:** HTTP responses must follow the wire format precisely: status line, headers (each `Key: Value\r\n`), blank line (`\r\n`), body. One function enforces that format in every code path, eliminating duplicate header-writing bugs.
 
-### File Serving
+### File Serving (`HTTPFileServe`)
 
-`/` reads `index.html` from disk via `os.ReadFile` and sends it with `Content-Type: text/html`. Returns early if the file is missing.
+Reads a file from disk by extension (`.html`, `.css`, `.js`) using `os.ReadFile` and sends it with the correct `Content-Type`. Unknown extensions return `500 Internal Server Error`.
 
-**Why:** Static file serving is the most common HTTP use case. Reading the file once per request is naive (no caching), but it's the simplest implementation that works — and the ceiling is marked for replacement with `os.ReadFile` + sync or in-memory cache.
+**Why:** Static file serving is the most common HTTP use case. Extension-based type detection keeps the function generic — pass any file path and it picks the right MIME type. Unknown types get a hard error instead of silently serving garbage.
 
-### Request Logging to Stdout
+### POST Body Logging
 
-Prints the request line and each header key-value pair as they're parsed.
+When a POST request includes a `Content-Length`, the body is read and logged via `log.Printf`.
 
-**Why:** When debugging a raw TCP server, you can't use browser devtools — the wire is opaque. Printing each line lets you confirm the parser is consuming exactly what the client sent.
+**Why:** Useful for debugging form submissions and API calls without a separate proxy. Non-POST methods skip body reading entirely.
+
+### Error Logging via `log` Package
+
+All unexpected errors (listen failure, read errors, missing files) are logged through Go's `log` package with timestamps. Fatal errors (can't bind port) use `log.Fatal`.
+
+**Why:** `log.Print` adds timestamps and goes to stderr by default — standard for daemon monitoring. `println` is for throwaway scripts, not servers.
 
 ## Imports
 
 - `bufio`
-- `fmt`
 - `io`
+- `log`
 - `net`
 - `os`
+- `slices`
 - `strconv`
 - `strings`
 - `time`
@@ -139,19 +146,25 @@ Reading raw TCP streams byte-by-byte is slow and resource-heavy. `bufio` reduces
 
 HTTP bodies can be arbitrarily large. Reading them in one shot (`io.ReadAll`) works for small payloads but blows memory for large ones. `io.LimitReader` wraps the buffered reader and stops after `Content-Length` bytes, preventing over-read. `io.ReadAll` then drains that bounded stream into a byte slice — safe because the limit is already enforced.
 
+Need to drain a body without inspecting it? `io.CopyN(io.Discard, ...)` reads and discards bytes while still advancing the socket, keeping the connection in sync.
+
+### `log`
+
+Logs errors with standard timestamps to stderr. Replaces raw `println` for all error paths.
+
+**Why:** A server backgrounding to a daemon or container has no terminal. Stderr with timestamps is the universal capture contract — systemd, Docker, log shippers all expect it.
+
 ### `net`
 
 Your direct bridge to the operating system's network stack. Manages low-level socket creation, IP binding, and port management required to speak TCP.
 
+### `slices`
+
+Provides `slices.Contains` for checking invalid query parameters (empty keys or values after splitting on `=`).
+
 ### `strconv`
 
 HTTP is a text-based protocol, but computers need numbers. `strconv` converts string representations of numbers (like `"22"`) into integers (`22`) so you can validate and manipulate them. It also converts integers back to strings for generating `Content-Length` headers dynamically.
-
-### `fmt`
-
-Formats and prints request lines, headers, and body info to stdout during parsing.
-
-**Why:** Raw TCP has no request inspector — `fmt.Printf` is your debugger. Without it, parsing bugs are invisible.
 
 ### `os`
 
