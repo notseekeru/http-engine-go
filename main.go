@@ -99,7 +99,7 @@ func handleConnection(conn net.Conn) {
 				println("INF: --End of Header--")
 				break
 			}
-			headerParts := strings.Split(headerLine, ": ")
+			headerParts := strings.SplitN(headerLine, ": ", 2)
 			headerMap[headerParts[0]] = headerParts[1]
 			fmt.Printf("INF: Header line: %q\n", headerLine)
 		}
