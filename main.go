@@ -31,7 +31,6 @@ func main() {
 		go handleConnection(conn)
 
 	}
-
 }
 
 func handleConnection(conn net.Conn) {
@@ -130,7 +129,7 @@ func handleConnection(conn net.Conn) {
 		}
 		switch queryMap["endpoint"] {
 		case "/":
-			MyHTTPMessage(conn, "200", "OK", "index.html File Sent", "html")
+			HTTPFileServe(conn, "200", "OK", "index.html")
 		case "/ping":
 			MyHTTPMessage(conn, "200", "OK", "pong")
 		default:
@@ -143,14 +142,35 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string, messageBody string, contentType ...string) {
-	// Server -> Client
-	datenow := time.Now()
-	server := "GoLang NixOS TCP/HTTP Engine"
-	var body string
-	var content string
+func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string, messageBody ...string) {
 
-	switch contentType[0] {
+	contentType := "text/plain"
+
+	body := strings.Join(messageBody, "")
+	body = body + "\n"
+	contentLength := strconv.Itoa(len(body))
+
+	// Server -> Client
+	serverResponse := "HTTP/1.1 " + statusCode + " " + statusPhrase + "\r\n" +
+		"Date: " + time.Now().UTC().Format(time.RFC1123) + "\r\n" +
+		"Server: " + "GoLang NixOS TCP/HTTP Engine" + "\r\n" +
+		"Content-Length: " + contentLength + "\r\n" +
+		"Content-Type: " + contentType + "\r\n" +
+		"Connection: " + "keep-alive" + "\r\n" +
+		"\r\n" +
+		body
+
+	myConnection.Write([]byte(serverResponse))
+}
+
+func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, filePath string) {
+	var body string
+	var contentType string
+
+	contentSlice := strings.SplitN(filePath, ".", 2)
+	println(contentSlice[1])
+
+	switch contentSlice[1] {
 	case "html":
 		bodyBytes, err := os.ReadFile("index.html")
 		if err != nil {
@@ -158,7 +178,8 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string
 			return
 		}
 		body = string(bodyBytes)
-		content = "text/html"
+		contentType = "text/html"
+
 	case "css":
 		bodyBytes, err := os.ReadFile("styles.css")
 		if err != nil {
@@ -166,7 +187,8 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string
 			return
 		}
 		body = string(bodyBytes)
-		content = "text/css"
+		contentType = "text/css"
+
 	case "js":
 		bodyBytes, err := os.ReadFile("index.js")
 		if err != nil {
@@ -174,19 +196,23 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string
 			return
 		}
 		body = string(bodyBytes)
-		content = "text/js"
+		contentType = "text/js"
+
 	default:
-		body = messageBody
-		content = "text/plain"
+		statusCode = "500"
+		statusPhrase = "Internal Server Error"
+		body = "file not found"
+		contentType = "text/plain"
 	}
 
-	bodyLength := strconv.Itoa(len(body))
+	contentLength := strconv.Itoa(len(body))
 
+	// Server -> Client
 	serverResponse := "HTTP/1.1 " + statusCode + " " + statusPhrase + "\r\n" +
-		"Date: " + datenow.UTC().Format(time.RFC1123) + "\r\n" +
-		"Server: " + server + "\r\n" +
-		"Content-Length: " + bodyLength + "\r\n" +
-		"Content-Type: " + content + "\r\n" +
+		"Date: " + time.Now().UTC().Format(time.RFC1123) + "\r\n" +
+		"Server: " + "GoLang NixOS TCP/HTTP Engine" + "\r\n" +
+		"Content-Length: " + contentLength + "\r\n" +
+		"Content-Type: " + contentType + "\r\n" +
 		"Connection: " + "keep-alive" + "\r\n" +
 		"\r\n" +
 		body
