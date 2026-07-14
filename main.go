@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -95,12 +94,10 @@ func handleConnection(conn net.Conn) {
 			}
 			headerLine = strings.TrimRight(headerLine, "\r\n")
 			if headerLine == "" {
-				println("INF: --End of Header--")
 				break
 			}
 			headerParts := strings.SplitN(headerLine, ": ", 2)
 			headerMap[headerParts[0]] = headerParts[1]
-			fmt.Printf("INF: Header line: %q\n", headerLine)
 		}
 
 		if _, ok := headerMap["Content-Length"]; ok {
@@ -110,23 +107,16 @@ func handleConnection(conn net.Conn) {
 				log.Printf("Could not convert string %q to int: %v", strValue, err)
 			}
 
-			if intValue64 == 0 {
-				println("INF: Content-Length = 0, skipping body read")
-			} else if intValue64 > 9999999 {
-				println("INF: Content-Length = 9999999, skipping body read")
-			} else {
-				bodyReader := io.LimitReader(reader, intValue64)
-				bodyBytes, err := io.ReadAll(bodyReader)
+			if intValue64 > 0 && intValue64 <= 9999999 {
+				_, err := io.CopyN(io.Discard, reader, intValue64)
 				if err != nil {
 					log.Print(err.Error())
 					return
 				}
-				fmt.Printf("INF: HTTP Body payload: %s\n", string(bodyBytes))
 			}
 
-		} else {
-			fmt.Println("INF: No HTTP Body payload found")
 		}
+
 		switch queryMap["endpoint"] {
 		case "/":
 			HTTPFileServe(conn, "200", "OK", "index.html")
