@@ -114,6 +114,8 @@ func handleConnection(conn net.Conn) {
 
 			if intValue64 == 0 {
 				println("INF: Content-Length = 0, skipping body read")
+			} else if intValue64 > 9999999 {
+				println("INF: Content-Length = 9999999, skipping body read")
 			} else {
 				bodyReader := io.LimitReader(reader, intValue64)
 				bodyBytes, err := io.ReadAll(bodyReader)
