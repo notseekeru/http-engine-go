@@ -73,16 +73,11 @@ func handleConnection(conn net.Conn) {
 				queryMap["endpoint"] = endpoint
 			}
 
-			paramaters := queryStripped
+			parameters := queryStripped
 
-			paramatersStripped := strings.Split(paramaters, "&")
-			if slices.Contains(paramatersStripped, "") {
-				MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
-				return
-			}
-			for _, value := range paramatersStripped {
+			for value := range strings.SplitSeq(parameters, "&") {
 				resultKV := strings.Split(value, "=")
-				if len(resultKV) != 2 {
+				if len(resultKV) != 2 || slices.Contains(resultKV, "") {
 					MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
 					return
 				}
