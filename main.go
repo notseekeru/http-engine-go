@@ -104,8 +104,7 @@ func handleConnection(conn net.Conn) {
 			fmt.Printf("INF: Header line: %q\n", headerLine)
 		}
 
-		if value, ok := headerMap["Content-Length"]; ok {
-			fmt.Println("Content-Length Value:", value)
+		if _, ok := headerMap["Content-Length"]; ok {
 			strValue := headerMap["Content-Length"]
 			intValue64, err := strconv.ParseInt(strValue, 10, 64)
 			if err != nil {
@@ -151,16 +150,33 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string
 	var body string
 	var content string
 
-	if len(contentType) > 0 && contentType[0] == "html" {
-		content = "text/html"
+	switch contentType[0] {
+	case "html":
 		bodyBytes, err := os.ReadFile("index.html")
 		if err != nil {
 			println(err.Error())
 			return
 		}
 		body = string(bodyBytes)
-	} else {
-		body = messageBody + "\n"
+		content = "text/html"
+	case "css":
+		bodyBytes, err := os.ReadFile("styles.css")
+		if err != nil {
+			println(err.Error())
+			return
+		}
+		body = string(bodyBytes)
+		content = "text/css"
+	case "js":
+		bodyBytes, err := os.ReadFile("index.js")
+		if err != nil {
+			println(err.Error())
+			return
+		}
+		body = string(bodyBytes)
+		content = "text/js"
+	default:
+		body = messageBody
 		content = "text/plain"
 	}
 
