@@ -90,6 +90,7 @@ func handleConnection(conn net.Conn) {
 			headerLine, err := reader.ReadString('\n')
 			if err != nil {
 				log.Print(err.Error())
+				MyHTTPMessage(conn, "400", "Bad Request")
 				return
 			}
 			headerLine = strings.TrimRight(headerLine, "\r\n")
@@ -105,12 +106,15 @@ func handleConnection(conn net.Conn) {
 			intValue64, err := strconv.ParseInt(strValue, 10, 64)
 			if err != nil {
 				log.Printf("Could not convert string %q to int: %v", strValue, err)
+				MyHTTPMessage(conn, "500", "Internal Server Error")
+				return
 			}
 
 			if intValue64 > 0 && intValue64 <= 9999999 && requestParts[0] == "POST" {
 				bodyBytes, err := io.ReadAll(io.LimitReader(reader, intValue64))
 				if err != nil {
 					log.Print(err.Error())
+					MyHTTPMessage(conn, "400", "Bad Request")
 					return
 				}
 				log.Printf("DEBUG: POST body: %s", bodyBytes)
@@ -124,7 +128,7 @@ func handleConnection(conn net.Conn) {
 		case "/ping":
 			MyHTTPMessage(conn, "200", "OK", "pong")
 		default:
-			MyHTTPMessage(conn, "404", "Not Found")
+			MyHTTPMessage(conn, "404", "Not Found", "Endpoint Not Found")
 		}
 
 		if strings.ToLower(headerMap["Connection"]) == "close" {
@@ -165,6 +169,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 		bodyBytes, err := os.ReadFile("index.html")
 		if err != nil {
 			log.Print(err.Error())
+			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
 			return
 		}
 		body = string(bodyBytes)
@@ -174,6 +179,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 		bodyBytes, err := os.ReadFile("styles.css")
 		if err != nil {
 			log.Print(err.Error())
+			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
 			return
 		}
 		body = string(bodyBytes)
@@ -183,6 +189,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 		bodyBytes, err := os.ReadFile("index.js")
 		if err != nil {
 			log.Print(err.Error())
+			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
 			return
 		}
 		body = string(bodyBytes)
