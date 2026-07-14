@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"slices"
@@ -15,8 +16,7 @@ import (
 func main() {
 	myListener, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		println(err.Error())
-		return
+		log.Fatal(err.Error())
 	}
 
 	defer myListener.Close()
@@ -24,7 +24,7 @@ func main() {
 	for {
 		conn, err := myListener.Accept()
 		if err != nil {
-			println(err.Error())
+			log.Print(err.Error())
 			break
 		}
 
@@ -90,7 +90,7 @@ func handleConnection(conn net.Conn) {
 		for {
 			headerLine, err := reader.ReadString('\n')
 			if err != nil {
-				println(err.Error())
+				log.Print(err.Error())
 				return
 			}
 			headerLine = strings.TrimRight(headerLine, "\r\n")
@@ -107,7 +107,7 @@ func handleConnection(conn net.Conn) {
 			strValue := headerMap["Content-Length"]
 			intValue64, err := strconv.ParseInt(strValue, 10, 64)
 			if err != nil {
-				fmt.Printf("ERR: Could not convert string %q to int: %v\n", strValue, err)
+				log.Printf("Could not convert string %q to int: %v", strValue, err)
 			}
 
 			if intValue64 == 0 {
@@ -118,7 +118,7 @@ func handleConnection(conn net.Conn) {
 				bodyReader := io.LimitReader(reader, intValue64)
 				bodyBytes, err := io.ReadAll(bodyReader)
 				if err != nil {
-					println(err.Error())
+					log.Print(err.Error())
 					return
 				}
 				fmt.Printf("INF: HTTP Body payload: %s\n", string(bodyBytes))
@@ -168,13 +168,12 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 	var contentType string
 
 	contentSlice := strings.SplitN(filePath, ".", 2)
-	println(contentSlice[1])
 
 	switch contentSlice[1] {
 	case "html":
 		bodyBytes, err := os.ReadFile("index.html")
 		if err != nil {
-			println(err.Error())
+			log.Print(err.Error())
 			return
 		}
 		body = string(bodyBytes)
@@ -183,7 +182,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 	case "css":
 		bodyBytes, err := os.ReadFile("styles.css")
 		if err != nil {
-			println(err.Error())
+			log.Print(err.Error())
 			return
 		}
 		body = string(bodyBytes)
@@ -192,7 +191,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 	case "js":
 		bodyBytes, err := os.ReadFile("index.js")
 		if err != nil {
-			println(err.Error())
+			log.Print(err.Error())
 			return
 		}
 		body = string(bodyBytes)
