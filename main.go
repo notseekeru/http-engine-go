@@ -126,6 +126,8 @@ func handleConnection(conn net.Conn) {
 		switch queryMap["endpoint"] {
 		case "/":
 			HTTPFileServe(conn, "200", "OK", "index.html")
+		case "/styles.css":
+			HTTPFileServe(conn, "200", "OK", "styles.css")
 		case "/ping":
 			MyHTTPMessage(conn, "200", "OK", "pong")
 		default:
