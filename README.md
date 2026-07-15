@@ -32,9 +32,9 @@ Each accepted connection spawns its own goroutine via `go handleConnection(conn)
 
 ### Request Keep-Alive Loop
 
-After writing the response, the goroutine loops back to read the next request on the same connection. Exits only on client disconnect (`EOF`) or when the client sends `Connection: close`.
+After writing the response, the goroutine loops back to read the next request on the same connection. Exits only on client disconnect (`EOF`) or when the client sends `Connection: close` (checked case-insensitively via `strings.ToLower`).
 
-**Why:** Real pages load many resources (CSS, JS, images). Reusing one TCP socket for all of them avoids the TCP handshake + slow-start penalty per file. The loop is the minimum plumbing needed — no connection-level state, no pipelining reordering, just serial request handling on a warm socket.
+**Why:** Real pages load many resources (CSS, JS, images). Reusing one TCP socket for all of them avoids the TCP handshake + slow-start penalty per file. The loop is the minimum plumbing needed — no connection-level state, no pipelining reordering, just serial request handling on a warm socket. The case-insensitive check handles both `Connection: close` and `Connection: Close` — HTTP header names are case-insensitive per RFC 7230.
 
 ### Buffered I/O with `bufio`
 
@@ -68,9 +68,9 @@ Iterates header lines until a blank line (`\r\n`) — the end-of-headers marker 
 
 ### Content-Length Body Reading
 
-If `Content-Length` is present, parses it to `int64`. If the method is `POST`, reads exactly that many bytes with `io.LimitReader` + `io.ReadAll` and logs the body. Non-POST bodies are ignored entirely.
+If `Content-Length` is present, parses it to `int64`. If the method is `POST` and the length is between `1` and `9999999` (≈10 MB), reads exactly that many bytes with `io.LimitReader` + `io.ReadAll` and logs the body. Non-POST bodies are ignored entirely.
 
-**Why:** Without `Content-Length`, you don't know where the headers end and the body ends. Reading blindly into the next request (HTTP pipelining) would corrupt data. `LimitReader` bounds the read so a malicious or broken client can't exhaust memory. POST-only logging avoids noise from GET/HEAD bodies that most clients never send.
+**Why:** Without `Content-Length`, you don't know where the headers end and the body ends. Reading blindly into the next request (HTTP pipelining) would corrupt data. `LimitReader` bounds the read so a malicious or broken client can't exhaust memory. The 10 MB cap provides an additional safety net — even with `LimitReader`, a `Content-Length: 9999999999` header would allocate a huge buffer. POST-only logging avoids noise from GET/HEAD bodies that most clients never send.
 
 ### Query String Parsing
 
@@ -96,11 +96,17 @@ Assembles a full HTTP/1.1 response: status line, `Date`, `Server`, `Content-Leng
 
 **Why:** HTTP responses must follow the wire format precisely: status line, headers (each `Key: Value\r\n`), blank line (`\r\n`), body. One function enforces that format in every code path, eliminating duplicate header-writing bugs.
 
-### File Serving (`HTTPFileServe`)
+### File Serving (`HTTPFileServe`) + Helper (`fileReadingHelper`)
 
-Reads a file from disk by extension (`.html`, `.css`, `.js`) using `os.ReadFile` and sends it with the correct `Content-Type`. Unknown extensions return `500 Internal Server Error`.
+`HTTPFileServe` delegates to `fileReadingHelper`, which:
+1. Sanitizes the path with `filepath.Base` — prevents directory traversal.
+2. Splits the filename on `.` to extract the extension.
+3. Reads the file with `os.ReadFile`.
+4. Returns the body string and a `Content-Type` of `text/<extension>`.
 
-**Why:** Static file serving is the most common HTTP use case. Extension-based type detection keeps the function generic — pass any file path and it picks the right MIME type. Unknown types get a hard error instead of silently serving garbage.
+No extension map, no unknown-ext error — just a naive split. `filepath.Base` is the only guard against `/etc/passwd` path traversal.
+
+**Why:** Static file serving is the most common HTTP use case. Pulling the helper out keeps `HTTPFileServe` a thin wrapper. `filepath.Base` is the minimum security boundary — anything else (canonicalization, chroot, allowlist) is over-engineering for a learning project. Extension-as-type keeps it generic without a MIME map.
 
 ### POST Body Logging
 
@@ -121,6 +127,7 @@ All unexpected errors (listen failure, read errors, missing files) are logged th
 - `log`
 - `net`
 - `os`
+- `path/filepath`
 - `slices`
 - `strconv`
 - `strings`
@@ -157,6 +164,12 @@ Logs errors with standard timestamps to stderr. Replaces raw `println` for all e
 ### `net`
 
 Your direct bridge to the operating system's network stack. Manages low-level socket creation, IP binding, and port management required to speak TCP.
+
+### `path/filepath`
+
+Sanitizes file paths before `os.ReadFile` via `filepath.Base`. Prevents path traversal attacks like `../../../etc/passwd` by stripping all directory components from the requested filename.
+
+**Why:** A request to `/../../etc/passwd` would otherwise leak any readable file on the system. `filepath.Base` returns only the last element — `/../../etc/passwd` becomes `passwd` which won't exist in the server's working directory. One call closes the entire traversal surface.
 
 ### `slices`
 
