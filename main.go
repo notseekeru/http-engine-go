@@ -165,7 +165,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 	var body string
 	var contentType string
 
-	body, contentType = fileReadingHelper(myConnection, filePath)
+	body, contentType = fileReadingHelper(filePath)
 
 	contentLength := strconv.Itoa(len(body))
 
@@ -182,7 +182,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 	myConnection.Write([]byte(serverResponse))
 }
 
-func fileReadingHelper(myConnection net.Conn, filePath string) (string, string) {
+func fileReadingHelper(filePath string) (string, string) {
 	sanitizedFilePath := filepath.Base(filePath)
 	println("DEBUG: sanitizedFilePath: " + sanitizedFilePath)
 	contentSlice := strings.SplitN(sanitizedFilePath, ".", 2)
@@ -191,7 +191,6 @@ func fileReadingHelper(myConnection net.Conn, filePath string) (string, string) 
 	bodyBytes, err := os.ReadFile(sanitizedFilePath)
 		if err != nil {
 			log.Print(err.Error())
-			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
 			return "", ""
 		}
 	body := string(bodyBytes)
