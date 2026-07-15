@@ -6,11 +6,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-	"path/filepath"
 )
 
 func main() {
@@ -163,48 +163,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 	var body string
 	var contentType string
 
-	sanitizedFilePath := filepath.Base(filePath)
-	println("DEBUG: sanitizedFilePath: " + sanitizedFilePath)
-	contentSlice := strings.SplitN(sanitizedFilePath, ".", 2)
-	println("DEBUG: contentSlice: " + strings.Join(contentSlice, ", "))
-
-	switch contentSlice[1] {
-	case "html":
-		bodyBytes, err := os.ReadFile(sanitizedFilePath)
-		if err != nil {
-			log.Print(err.Error())
-			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
-			return
-		}
-		body = string(bodyBytes)
-		contentType = "text/html"
-
-	case "css":
-		bodyBytes, err := os.ReadFile(sanitizedFilePath)
-		if err != nil {
-			log.Print(err.Error())
-			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
-			return
-		}
-		body = string(bodyBytes)
-		contentType = "text/css"
-
-	case "js":
-		bodyBytes, err := os.ReadFile(sanitizedFilePath)
-		if err != nil {
-			log.Print(err.Error())
-			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
-			return
-		}
-		body = string(bodyBytes)
-		contentType = "text/js"
-
-	default:
-		statusCode = "500"
-		statusPhrase = "Internal Server Error"
-		body = "file not found"
-		contentType = "text/plain"
-	}
+	body, contentType = fileReadingHelper(myConnection, filePath)
 
 	contentLength := strconv.Itoa(len(body))
 
@@ -219,4 +178,21 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 		body
 
 	myConnection.Write([]byte(serverResponse))
+}
+
+func fileReadingHelper(myConnection net.Conn, filePath string) (string, string) {
+	sanitizedFilePath := filepath.Base(filePath)
+	println("DEBUG: sanitizedFilePath: " + sanitizedFilePath)
+	contentSlice := strings.SplitN(sanitizedFilePath, ".", 2)
+	println("DEBUG: contentSlice: " + strings.Join(contentSlice, ", "))
+
+	bodyBytes, err := os.ReadFile(sanitizedFilePath)
+		if err != nil {
+			log.Print(err.Error())
+			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
+			return "", ""
+		}
+	body := string(bodyBytes)
+	contentType := "text/" + contentSlice[1]
+	return body, contentType
 }
