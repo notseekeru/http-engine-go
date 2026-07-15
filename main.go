@@ -192,6 +192,21 @@ func fileReadingHelper(filePath string) (string, string) {
 			return "", ""
 		}
 	body := string(bodyBytes)
-	contentType := "text/" + contentSlice[1]
+
+	contentTypeMap := map[string]string{
+		"html": "text/html",
+		"css":  "text/css",
+		"js":   "application/javascript",
+		"png":  "image/png",
+		"jpg":  "image/jpeg",
+		"jpeg": "image/jpeg",
+		"gif":  "image/gif",
+	}
+
+	contentType := contentTypeMap[contentSlice[1]]
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
 	return body, contentType
 }
