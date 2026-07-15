@@ -183,10 +183,8 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 }
 
 func fileReadingHelper(filePath string) (string, string) {
-	sanitizedFilePath := filepath.Base(filePath)
-	println("DEBUG: sanitizedFilePath: " + sanitizedFilePath)
+	sanitizedFilePath := filepath.Clean(filePath)
 	contentSlice := strings.SplitN(sanitizedFilePath, ".", 2)
-	println("DEBUG: contentSlice: " + strings.Join(contentSlice, ", "))
 
 	bodyBytes, err := os.ReadFile(sanitizedFilePath)
 		if err != nil {
