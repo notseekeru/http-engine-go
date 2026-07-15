@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"path/filepath"
 )
 
 func main() {
@@ -162,11 +163,14 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 	var body string
 	var contentType string
 
-	contentSlice := strings.SplitN(filePath, ".", 2)
+	sanitizedFilePath := filepath.Base(filePath)
+	println("DEBUG: sanitizedFilePath: " + sanitizedFilePath)
+	contentSlice := strings.SplitN(sanitizedFilePath, ".", 2)
+	println("DEBUG: contentSlice: " + strings.Join(contentSlice, ", "))
 
 	switch contentSlice[1] {
 	case "html":
-		bodyBytes, err := os.ReadFile(filePath)
+		bodyBytes, err := os.ReadFile(sanitizedFilePath)
 		if err != nil {
 			log.Print(err.Error())
 			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
@@ -176,7 +180,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 		contentType = "text/html"
 
 	case "css":
-		bodyBytes, err := os.ReadFile(filePath)
+		bodyBytes, err := os.ReadFile(sanitizedFilePath)
 		if err != nil {
 			log.Print(err.Error())
 			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
@@ -186,7 +190,7 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 		contentType = "text/css"
 
 	case "js":
-		bodyBytes, err := os.ReadFile(filePath)
+		bodyBytes, err := os.ReadFile(sanitizedFilePath)
 		if err != nil {
 			log.Print(err.Error())
 			MyHTTPMessage(myConnection, "404", "Not Found", "File not found")
