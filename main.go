@@ -7,25 +7,27 @@ import (
 	"strings"
 )
 
-// Testing grounds for my implementation of solutions
-
 func main() {
-	maliciousPath := "/index.html"
-	cleanPath := filepath.Clean(maliciousPath)
-	log.Println(cleanPath)
+	// Test this with "/index.html", "/etc/passwd", and "/../etc/passwd"
+	maliciousPath := "/malicious_shortcut/passwd"
+	log.Println("Malicious path:", maliciousPath)
 
 	cwd, err := os.Getwd()
-	log.Println("Current working directory:", cwd)
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("The -Cwd-:", cwd)
 
-	fullPath := filepath.Join(cwd, cleanPath)
+	fullPath := filepath.Join(cwd, maliciousPath)
 	log.Println("Full path:", fullPath)
 
-	if !strings.HasPrefix(fullPath, cwd) {
+
+	basePrefix := cwd + string(filepath.Separator)
+	log.Println("Base prefix:", basePrefix)
+
+	if !strings.HasPrefix(fullPath, basePrefix) && fullPath != cwd {
 		log.Fatal("Access to files outside the allowed directory is not permitted")
 	}
 
-	// Dynamically build your base folder path
+	log.Println("Success! File path is safe to use.")
 }
