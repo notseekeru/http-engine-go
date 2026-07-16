@@ -19,6 +19,11 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	defer myListener.Close()
 
 	for {
@@ -28,12 +33,12 @@ func main() {
 			break
 		}
 
-		go handleConnection(conn)
+		go handleConnection(cwd, conn)
 
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(cwd string, conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 
@@ -125,9 +130,9 @@ func handleConnection(conn net.Conn) {
 
 		switch queryMap["endpoint"] {
 		case "/":
-			HTTPFileServe(conn, "200", "OK", "index.html")
+			HTTPFileServe(cwd, conn, "200", "OK", "index.html")
 		case "/styles.css":
-			HTTPFileServe(conn, "200", "OK", "styles.css")
+			HTTPFileServe(cwd, conn, "200", "OK", "styles.css")
 		case "/ping":
 			MyHTTPMessage(conn, "200", "OK", "pong")
 		default:
@@ -161,11 +166,11 @@ func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string
 	myConnection.Write([]byte(serverResponse))
 }
 
-func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, filePath string) {
+func HTTPFileServe(cwd string, myConnection net.Conn, statusCode string, statusPhrase, filePath string) {
 	var body string
 	var contentType string
 
-	body, contentType = fileReadingHelper(filePath)
+	body, contentType = fileReadingHelper(cwd, filePath)
 
 	contentLength := strconv.Itoa(len(body))
 
@@ -182,15 +187,22 @@ func HTTPFileServe(myConnection net.Conn, statusCode string, statusPhrase, fileP
 	myConnection.Write([]byte(serverResponse))
 }
 
-func fileReadingHelper(filePath string) (string, string) {
-	sanitizedFilePath := filepath.Clean(filePath)
-	contentSlice := strings.SplitN(sanitizedFilePath, ".", 2)
+func fileReadingHelper(cwd string, filePath string) (string, string) {
+	fullPath := filepath.Join(cwd, filePath)
+	basePrefix := cwd + string(filepath.Separator)
 
-	bodyBytes, err := os.ReadFile(sanitizedFilePath)
-		if err != nil {
-			log.Print(err.Error())
-			return "", ""
-		}
+	if !strings.HasPrefix(fullPath, basePrefix) && fullPath != cwd {
+		log.Println("Error: File path is outside the allowed directory")
+		return "", ""
+	}
+
+	contentSlice := strings.SplitN(filePath, ".", 2)
+
+	bodyBytes, err := os.ReadFile(fullPath)
+	if err != nil {
+		log.Print(err.Error())
+		return "", ""
+	}
 	body := string(bodyBytes)
 
 	contentTypeMap := map[string]string{
