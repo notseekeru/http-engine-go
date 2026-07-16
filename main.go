@@ -13,30 +13,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("The -Cwd-:", cwd)
 
-	isSafePath(cwd, "/index.html")
-	isSafePath(cwd, "/etc/passwd")
-	isSafePath(cwd, "/../etc/passwd")
-	isSafePath(cwd, "../http-engine-go-secrets/flag.txt")
+	pathMap := map[string]bool{
+		"/index.html":                        isSafePath(cwd, "/index.html"),                        //true
+		"/etc/passwd":                        isSafePath(cwd, "/etc/passwd"),                        //true
+		"/../etc/passwd":                     isSafePath(cwd, "/../etc/passwd"),                     //false
+		"../http-engine-go-secrets/flag.txt": isSafePath(cwd, "../http-engine-go-secrets/flag.txt"), //false
+	}
+
+	for path, isSafe := range pathMap {
+		log.Printf("Path: %s, Is Safe: %t", path, isSafe)
+	}
 }
 
 func isSafePath(cwd string, targetPath string) bool {
 	filePath := targetPath
-	log.Println("Target path:", filePath)
-
 	fullPath := filepath.Join(cwd, filePath)
-	log.Println("Full path:", fullPath)
-
 	basePrefix := cwd + string(filepath.Separator)
-	log.Println("Base prefix:", basePrefix)
 
 	if !strings.HasPrefix(fullPath, basePrefix) && fullPath != cwd {
-		log.Println("Error: File path is outside the current working directory.")
 		return false
 	}
 
-	log.Println("Success! File path is safe to use.")
-	log.Println()
 	return true
 }
