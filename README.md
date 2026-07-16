@@ -91,7 +91,7 @@ A `switch` on the extracted endpoint (`queryMap["endpoint"]`):
 
 Query parameters are stripped before dispatch, so `/ping?foo=bar` correctly matches the `/ping` case.
 
-### Response Builder (`MyHTTPMessage`)
+### Response Builder (`HTTPMessage`)
 
 Assembles a full HTTP/1.1 response: status line, `Date`, `Server`, `Content-Length`, `Content-Type`, `Connection` headers, blank line, body. Accepts variadic message body parts (joined with no separator) and always sets `Content-Type` to `text/plain`.
 

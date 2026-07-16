@@ -14,20 +14,21 @@ import (
 )
 
 func main() {
-	myListener, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	defer myListener.Close()
+	ln, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	defer ln.Close()
 
 	for {
-		conn, err := myListener.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
 			log.Print(err.Error())
 			break
@@ -57,15 +58,15 @@ func handleConnection(cwd string, conn net.Conn) {
 		requestParts := strings.Split(requestLine, " ")
 
 		if len(requestParts) != 3 {
-			MyHTTPMessage(conn, "400", "Bad Request", "Too many")
+			HTTPMessage(conn, "400", "Bad Request", "Too many")
 			return
 		}
 		if requestParts[2] != "HTTP/1.1" {
-			MyHTTPMessage(conn, "400", "Bad Request", "Only HTTP/1.1 supported")
+			HTTPMessage(conn, "400", "Bad Request", "Only HTTP/1.1 supported")
 			return
 		}
 		if requestParts[0] != "GET" && requestParts[0] != "POST" {
-			MyHTTPMessage(conn, "405", "Method Not Allowed", "Unsupported HTTP Method")
+			HTTPMessage(conn, "405", "Method Not Allowed", "Unsupported HTTP Method")
 			return
 		}
 
@@ -82,7 +83,7 @@ func handleConnection(cwd string, conn net.Conn) {
 			for value := range strings.SplitSeq(parameters, "&") {
 				resultKV := strings.Split(value, "=")
 				if len(resultKV) != 2 || slices.Contains(resultKV, "") {
-					MyHTTPMessage(conn, "400", "Bad Request", "Malformed query")
+					HTTPMessage(conn, "400", "Bad Request", "Malformed query")
 					return
 				}
 				queryMap[resultKV[0]] = resultKV[1]
@@ -96,7 +97,7 @@ func handleConnection(cwd string, conn net.Conn) {
 			headerLine, err := reader.ReadString('\n')
 			if err != nil {
 				log.Print(err.Error())
-				MyHTTPMessage(conn, "400", "Bad Request")
+				HTTPMessage(conn, "400", "Bad Request")
 				return
 			}
 			headerLine = strings.TrimRight(headerLine, "\r\n")
@@ -112,7 +113,7 @@ func handleConnection(cwd string, conn net.Conn) {
 			intValue64, err := strconv.ParseInt(strValue, 10, 64)
 			if err != nil {
 				log.Printf("Could not convert string %q to int: %v", strValue, err)
-				MyHTTPMessage(conn, "500", "Internal Server Error")
+				HTTPMessage(conn, "500", "Internal Server Error")
 				return
 			}
 
@@ -120,7 +121,7 @@ func handleConnection(cwd string, conn net.Conn) {
 				bodyBytes, err := io.ReadAll(io.LimitReader(reader, intValue64))
 				if err != nil {
 					log.Print(err.Error())
-					MyHTTPMessage(conn, "400", "Bad Request")
+					HTTPMessage(conn, "400", "Bad Request")
 					return
 				}
 				log.Printf("DEBUG: POST body: %s", bodyBytes)
@@ -134,9 +135,9 @@ func handleConnection(cwd string, conn net.Conn) {
 		case "/styles.css":
 			HTTPFileServe(cwd, conn, "200", "OK", "styles.css")
 		case "/ping":
-			MyHTTPMessage(conn, "200", "OK", "pong")
+			HTTPMessage(conn, "200", "OK", "pong")
 		default:
-			MyHTTPMessage(conn, "404", "Not Found", "Endpoint Not Found")
+			HTTPMessage(conn, "404", "Not Found", "Endpoint Not Found")
 		}
 
 		if strings.ToLower(headerMap["Connection"]) == "close" {
@@ -145,15 +146,13 @@ func handleConnection(cwd string, conn net.Conn) {
 	}
 }
 
-func MyHTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string, messageBody ...string) {
-
+func HTTPMessage(myConnection net.Conn, statusCode string, statusPhrase string, messageBody ...string) {
 	contentType := "text/plain"
 
 	body := strings.Join(messageBody, "")
 	body = body + "\n"
 	contentLength := strconv.Itoa(len(body))
 
-	// Server -> Client
 	serverResponse := "HTTP/1.1 " + statusCode + " " + statusPhrase + "\r\n" +
 		"Date: " + time.Now().UTC().Format(time.RFC1123) + "\r\n" +
 		"Server: " + "GoLang NixOS TCP/HTTP Engine" + "\r\n" +
@@ -174,7 +173,6 @@ func HTTPFileServe(cwd string, myConnection net.Conn, statusCode string, statusP
 
 	contentLength := strconv.Itoa(len(body))
 
-	// Server -> Client
 	serverResponse := "HTTP/1.1 " + statusCode + " " + statusPhrase + "\r\n" +
 		"Date: " + time.Now().UTC().Format(time.RFC1123) + "\r\n" +
 		"Server: " + "GoLang NixOS TCP/HTTP Engine" + "\r\n" +
