@@ -83,6 +83,7 @@ Extracts `?key=val` from the request path into `map[string]string` with the endp
 A `switch` on the extracted endpoint (`queryMap["endpoint"]`):
 
 - `/` → `HTTPFileServe` serves `index.html` with auto-detected `Content-Type`
+- `/styles.css` → `HTTPFileServe` serves `styles.css` with auto-detected `Content-Type`
 - `/ping` → returns `pong` as `text/plain`
 - anything else → `404 Not Found`
 
@@ -99,14 +100,12 @@ Assembles a full HTTP/1.1 response: status line, `Date`, `Server`, `Content-Leng
 ### File Serving (`HTTPFileServe`) + Helper (`fileReadingHelper`)
 
 `HTTPFileServe` delegates to `fileReadingHelper`, which:
-1. Sanitizes the path with `filepath.Base` — prevents directory traversal.
+1. Joins the request path with the working directory via `filepath.Join` and validates it stays under `cwd` using `strings.HasPrefix` — prevents directory traversal.
 2. Splits the filename on `.` to extract the extension.
 3. Reads the file with `os.ReadFile`.
-4. Returns the body string and a `Content-Type` of `text/<extension>`.
+4. Returns the body string and a `Content-Type` looked up from a MIME map (`text/html`, `text/css`, `application/javascript`, `image/png`, `image/jpeg`, `image/gif`), falling back to `application/octet-stream`.
 
-No extension map, no unknown-ext error — just a naive split. `filepath.Base` is the only guard against `/etc/passwd` path traversal.
-
-**Why:** Static file serving is the most common HTTP use case. Pulling the helper out keeps `HTTPFileServe` a thin wrapper. `filepath.Base` is the minimum security boundary — anything else (canonicalization, chroot, allowlist) is over-engineering for a learning project. Extension-as-type keeps it generic without a MIME map.
+**Why:** Static file serving is the most common HTTP use case. Pulling the helper out keeps `HTTPFileServe` a thin wrapper. The prefix check (`strings.HasPrefix(fullPath, basePrefix)`) prevents traversal by rejecting any resolved path outside the working directory — more robust than `filepath.Base` alone. A proper MIME map ensures browsers render resources correctly instead of treating CSS or JS as plain text.
 
 ### POST Body Logging
 
@@ -167,9 +166,9 @@ Your direct bridge to the operating system's network stack. Manages low-level so
 
 ### `path/filepath`
 
-Sanitizes file paths before `os.ReadFile` via `filepath.Base`. Prevents path traversal attacks like `../../../etc/passwd` by stripping all directory components from the requested filename.
+Provides `filepath.Join` and `filepath.Separator` for safe path construction. Used in conjunction with `strings.HasPrefix` to ensure the resolved file path remains inside the working directory.
 
-**Why:** A request to `/../../etc/passwd` would otherwise leak any readable file on the system. `filepath.Base` returns only the last element — `/../../etc/passwd` becomes `passwd` which won't exist in the server's working directory. One call closes the entire traversal surface.
+**Why:** A request to `/../../etc/passwd` would otherwise leak any readable file. Instead of naively joining user input with the CWD, the engine checks `strings.HasPrefix(fullPath, cwd + separator)` after `filepath.Join`, rejecting any path that escapes the server's root. This handles both simple traversal (`../`) and symlink-like edge cases more thoroughly than `filepath.Base` alone.
 
 ### `slices`
 
@@ -208,12 +207,6 @@ This is a minimal, educational TCP/HTTP engine. It touches the wire directly so 
 ## Optional Features (Not Implemented)
 
 These build on the existing engine in increasing complexity. Ordered from least to most effort.
-
-### Content-Type Negotiation
-
-Map file extensions (`.html`, `.css`, `.js`, `.png`) to MIME types instead of hardcoding `text/html` or `text/plain`.
-
-**Why:** Browsers rely on `Content-Type` to render resources correctly. Serving CSS as `text/plain` disables styling.
 
 ### Chunked Transfer Encoding
 
